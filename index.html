@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TEDxGUC Cashbook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: sticky stage-black header with tab rail; each tab is a stack of panels on a 12-col grid that collapses to one column on phones. The red "stage dot" sits behind the hero number. */
+:root{
+  --ink:#0B090A; --stage:#151113; --stage-2:#1D181A; --rule:#2C2528; --fg:#F5F2F1; --muted:#A69B9F; --dim:#6E6468;
+  --red:#EB0028; --red-deep:#8E0B22; --red-soft:#FF8296;
+  --good:#3BD38A; --warn:#F5B638; --bad:#FF5A6E;
+  --display:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+html,body{background:var(--ink);color:var(--fg)}
+body{font-family:var(--body);font-size:15px;line-height:1.5;font-variation-settings:"wdth" 100;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:800;font-variation-settings:"wdth" 80}
+h3{font-size:15px;font-weight:700}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* header */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--ink) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.bar{display:flex;align-items:center;gap:16px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand img{height:26px;width:auto;display:block}
+.season{padding:5px 8px;font-family:var(--mono);font-size:12px;border-radius:999px}
+.brand .sub{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;border-left:1px solid var(--rule);padding-left:12px;white-space:nowrap}
+.bar .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--rule);background:var(--stage);border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:14px;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--muted)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.red:hover{background:#ff1a3d}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.icon-btn{border:1px solid var(--rule);background:var(--stage);border-radius:50%;width:36px;height:36px;display:grid;place-items:center;cursor:pointer}
+.kbd{font-family:var(--mono);font-size:10px;border:1px solid rgba(255,255,255,.35);border-radius:4px;padding:0 4px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{border:0;background:transparent;padding:6px 12px;border-radius:999px;color:var(--muted);cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px}
+nav.tabs button[aria-selected="true"]{background:var(--fg);color:var(--ink)}
+nav.tabs button .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center}
+
+main{padding-block:24px 80px}
+section.tab{display:grid;gap:20px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px}
+.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media (max-width:960px){.c4,.c5,.c6,.c7,.c8{grid-column:span 12}}
+.panel{background:var(--stage);border:1px solid var(--rule);border-radius:var(--r);padding:20px;min-width:0}
+.panel-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-radius:var(--r);border:1px solid var(--rule);background:var(--stage);padding:28px 24px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:center}
+.hero::before{content:"";position:absolute;width:520px;height:520px;left:-120px;top:50%;transform:translateY(-50%);border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--red) 0 58%,var(--red-deep) 66%,transparent 70%);opacity:.95}
+.hero > *{position:relative}
+.hero .big{font-family:var(--display);font-weight:900;font-variation-settings:"wdth" 70;font-size:clamp(46px,8vw,92px);line-height:.92;letter-spacing:-.02em}
+.hero .big small{font-size:.32em;font-weight:700;letter-spacing:.04em;margin-left:6px;opacity:.85}
+.hero .cap{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;color:#fff}
+.hero .note{color:rgba(255,255,255,.85);margin-top:10px;max-width:38ch}
+.splits{display:grid;gap:10px}
+.split{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--ink) 70%,transparent);border:1px solid var(--rule)}
+.split b{font-family:var(--display);font-size:22px;font-variation-settings:"wdth" 85;font-weight:800}
+.heroes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.heroes .hero{grid-template-columns:1fr;align-content:start}
+.heroes .hero::before{width:440px;height:440px;left:-150px;top:-150px;transform:none}
+.hero.bank::before{background:radial-gradient(circle at 50% 50%,transparent 0 55%,var(--red) 56% 59%,transparent 60%);opacity:.8}
+@media (max-width:860px){.heroes{grid-template-columns:1fr}}
+
+.alerts{display:flex;gap:10px;flex-wrap:wrap}
+.alert{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:8px;background:var(--stage);border:1px solid var(--rule);cursor:pointer;text-align:left;font-size:14px}
+.alert .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.alert.bad .dot{background:var(--bad)}.alert.warn .dot{background:var(--warn)}.alert.good .dot{background:var(--good)}
+.alert:hover{border-color:var(--muted)}
+
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kv div b{display:block;font-family:var(--display);font-size:24px;font-weight:800;font-variation-settings:"wdth" 80}
+@media (max-width:520px){.kv{grid-template-columns:1fr 1fr}}
+svg text{fill:var(--muted);font-family:var(--mono);font-size:11px}
+svg .v{fill:var(--fg);font-weight:600}
+.chart{width:100%;height:auto;display:block}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:13px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.stack{display:flex;height:18px;border-radius:4px;overflow:hidden;gap:2px}
+
+.rank{display:grid;gap:8px}
+.rank-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px}
+.rank-row .bar-bg{grid-column:2/4;height:4px;background:var(--stage-2);border-radius:2px;overflow:hidden}
+.rank-row .bar-bg i{display:block;height:100%;background:var(--red)}
+.rank-row .n{font-family:var(--mono);color:var(--dim);font-size:12px}
+.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ledger */
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{border:1px solid var(--rule);background:transparent;border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inp{background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;min-width:0}
+.inp:focus{border-color:var(--muted);outline:none}
+.search{flex:1 1 220px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{position:sticky;top:0;background:var(--stage-2);text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;white-space:nowrap;cursor:pointer;user-select:none}
+th.r,td.r{text-align:right}
+td{padding:10px 12px;border-top:1px solid var(--rule);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--stage-2)}
+tfoot td{background:var(--stage-2);font-weight:700}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-family:var(--mono);letter-spacing:.04em;white-space:nowrap;border:1px solid transparent}
+.k-cashIn{background:rgba(59,211,138,.12);color:var(--good)}
+.k-cashOut{background:rgba(235,0,40,.16);color:var(--red-soft)}
+.k-bankIn{background:rgba(245,242,241,.1);color:var(--fg)}
+.k-bankOut{background:rgba(245,182,56,.12);color:var(--warn)}
+.f-Yes{border-color:var(--good);color:var(--good)}
+.f-No{border-color:var(--bad);color:var(--bad)}
+.f-{border-color:var(--dim);color:var(--muted)}
+.planned{border:1px dashed var(--warn);color:var(--warn)}
+.amt-in{color:var(--good)}.amt-out{color:var(--fg)}
+.row-planned td{color:var(--muted)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+
+/* team */
+.members{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.member{background:var(--stage);border:1px solid var(--rule);border-radius:var(--r);padding:18px;display:grid;gap:12px}
+.member .av{width:40px;height:40px;border-radius:50%;background:var(--red);display:grid;place-items:center;font-family:var(--display);font-weight:900;color:#fff}
+.member .hold{font-family:var(--display);font-size:30px;font-weight:900;font-variation-settings:"wdth" 75;line-height:1}
+.neg{color:var(--bad)}.pos{color:var(--good)}
+.meter{height:6px;border-radius:3px;background:var(--stage-2);overflow:hidden}
+.meter i{display:block;height:100%}
+.handover{display:grid;gap:8px}
+.ho{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;flex-wrap:wrap}
+.ho .arrow{color:var(--red);font-weight:900}
+
+/* phases */
+.phases{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.phase{background:var(--stage);border:1px solid var(--rule);border-radius:var(--r);padding:18px;display:grid;gap:12px;align-content:start}
+.phase .tot{font-family:var(--display);font-size:28px;font-weight:900;font-variation-settings:"wdth" 75}
+.budget-row{display:flex;gap:8px;align-items:center}
+.budget-row .inp{width:140px}
+.state{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px}
+.state.ok{background:rgba(59,211,138,.12);color:var(--good)}
+.state.near{background:rgba(245,182,56,.14);color:var(--warn)}
+.state.over{background:rgba(255,90,110,.15);color:var(--bad)}
+.state.none{background:var(--stage-2);color:var(--muted)}
+.mini{display:grid;gap:6px;font-size:13px}
+.mini div{display:flex;justify-content:space-between;gap:10px}
+
+/* fatora */
+.ring-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.missing-list{display:grid;gap:6px}
+.miss{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--rule);border-radius:8px}
+.miss .d{min-width:0}
+.receipts{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.rcpt{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--stage-2);text-decoration:none;color:inherit;display:grid}
+.rcpt img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;max-width:100%}
+.rcpt .pdf{aspect-ratio:3/4;display:grid;place-items:center;font-family:var(--mono);color:var(--muted)}
+.rcpt span{padding:6px 8px;font-size:12px}
+
+/* activity */
+.feed{display:grid}
+.ev{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid var(--rule);align-items:baseline}
+.ev:first-child{border-top:0}
+.ev .who{font-weight:700}
+.ev time{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:nowrap}
+.ev .act-added{color:var(--good)}.ev .act-edited{color:var(--warn)}.ev .act-deleted{color:var(--bad)}
+
+/* ask */
+.ask-box{display:grid;gap:12px}
+.ask-box textarea{min-height:90px;resize:vertical}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--rule);border-radius:999px;padding:6px 12px;background:transparent;cursor:pointer;font-size:13px;text-align:left}
+.chip:hover{border-color:var(--red)}
+.answer{white-space:pre-wrap;line-height:1.65;max-width:75ch;min-height:40px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--stage);border-left:1px solid var(--rule);z-index:41;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer-h{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--rule)}
+.drawer-b{padding:20px;overflow-y:auto;display:grid;gap:14px;align-content:start;flex:1}
+.drawer-f{padding:14px 20px;border-top:1px solid var(--rule);display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.field{display:grid;gap:6px}
+.field label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.amount-inp{font-family:var(--display);font-size:32px;font-weight:800;font-variation-settings:"wdth" 80;padding:6px 12px}
+.check{display:flex;gap:8px;align-items:center;font-size:14px}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));background:var(--stage);border:1px solid var(--rule);border-radius:12px;z-index:50;padding:22px;display:grid;gap:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--ink);border-radius:999px;padding:10px 12px 10px 18px;z-index:60;display:flex;gap:12px;align-items:center;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
+.toast button{background:var(--ink);color:var(--fg);border:0;border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:700}
+.banner{padding:12px 16px;border-radius:8px;border:1px solid var(--warn);color:var(--warn);background:rgba(245,182,56,.08);font-size:14px}
+.muted{color:var(--muted)}
+.plist{display:grid;gap:10px;max-height:50vh;overflow-y:auto}
+.prow{display:grid;grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.prow .av{width:36px;height:36px;border-radius:50%;background:var(--red);display:grid;place-items:center;font-family:var(--display);font-weight:900;color:#fff;font-size:13px}
+.reassign{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;padding:8px 10px;border:1px dashed var(--warn);border-radius:8px}
+.padd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px}
+#people{width:min(640px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto}
+@media (max-width:560px){.prow{grid-template-columns:36px minmax(0,1fr) auto}.prow [data-role]{grid-column:2/4}.prow .lbl{grid-column:2}.padd{grid-template-columns:1fr}}
+.panel.curator{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;border-color:var(--red);background:linear-gradient(90deg,rgba(235,0,40,.2),var(--stage) 65%)}
+.cur-l{display:flex;gap:14px;align-items:center}
+.av-big{width:52px;height:52px;border-radius:50%;background:var(--red);display:grid;place-items:center;color:#fff;font-size:22px;flex:none}
+.cur-n{display:flex;gap:28px;flex-wrap:wrap}
+.cur-n b{display:block;font-family:var(--display);font-size:26px;font-weight:900;font-variation-settings:"wdth" 75}
+.vatline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);padding:8px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--ink)}
+.vatline b{color:var(--fg);margin-left:4px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.kpi{background:var(--stage);border:1px solid var(--rule);border-radius:var(--r);padding:18px;display:grid;gap:4px;min-width:0}
+.kpi b{font-family:var(--display);font-size:30px;font-weight:900;font-variation-settings:"wdth" 75;line-height:1.05}
+.kpi.hot{border-color:var(--red)}
+@media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}}
+.tp-money{color:var(--good);border-color:var(--good)}.tp-in-kind{color:var(--warn);border-color:var(--warn)}.tp-both{color:var(--fg);border-color:var(--fg)}.tp-pledged{color:var(--muted);border:1px dashed var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){.brand .sub{display:none}.btn .t{display:none}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAtAAAAB4CAYAAADbh8U2AAAxzElEQVR42u2deZxcRbXHv+d290zPZIEkMxMICQGyzAREIwE3BEQgqKjwVDZRVEB8bLLjQ0FEUPZNQXF56MMFFFQQZVPABFEQCAiSzCQBEkhCMjMQyTLTPd19z/ujbjCELPf29HJ7+nw/n/7wIVN3q7qn6ld1T50DhmEYhmEYhmEYhmEYhmEYhlEOxKrAMAzDqBdUtQ1oAMYCieCftwfaAD8YF9cAXesOAXqAPhHptho0jFB2NgIYDowK/gvQDHRsULQT6KtFO3uTgH6NnbZK0JBcbW1fFbZj7OvCrPz6//YKbx/WzEDa2qQyjAD6aMhsyzNr39QZgPcSu26VIOfVU12sYVj/OIYPbPhe1kwnzsT0qzQdJpD2y9aJan4tDb+byLMrB3uuHtp3b0R2y5bpXhvxJEthWQtdfxA3YA3lAXwUsCOwK7ALMAmYGAjnhkAwh+W1YJBfDvQC/wKeAeYBC0Xk39Z7GnUqlJuBbYC3BXY2GZgGtKwnoNNF2NnLgZ09BzwOLBeRvjg9e3L9/ynQeJsHuzXi21tRYRJ4LGPJTGDOmxsoe1GSxNGNFKySKmIQCZJkbwbOWP/fV/C21mYGHkzgjS3UiX3kgRRrlveydmUPHa8o9Co6L4m3EHjJx3+pla6Yz+0W53za92sldXRfmdqtEcEn1wGcM5jzvMT4JuBHTSSmJ8qgbSX4ZeDYoSieVTUdDOD7Ae8HdgdGA40lOP3o4Dc++P8PBf/NAr2q+hTwKPAX4BkRWV3jddkG7BCy+HMisraOBeTO/GeFdXOsBjpFRIfAM08K7OtA4F24LzgjSmxnuwP/tV7dLVbVJ4D7gEdE5OVYCWjQ0Um8MT4eRqUFtODhpTbypxEJZEzC2qRi7bCxjsAj7wEtCWQMddMWSgMyRnDfuQWhgKLAAJoVeKmH9udBZoH3jyz+P8fT+WqcnkCgsAo981Xy704h7QNl0I0ZVz8nrGDKL8ay4J/FnifNsOPTeNP/XabJchMeGfwb2+i6aQiJlyTwTuBTwEeAnamsgTYC2wW/jwb/tkBVHwJ+HQz0mRqs2k8BN4Qs+x7gsToeNm4GZoQo93dg72BtohZtbVxgY58E3gtsVcHLj8CtcL8N+DzQo6pPArcC91TL5WMDAU2hgFIY2l/24q1Y3ioBfGuTyuHqWTa1VFl39vHmZ9X1hWljEm+KB1M85EP9+H4alvfQ/rCH3OGjs1vpWhaHZxjJ/N5X6Dgzgd4hkCx16/lAEzK8gHcW8NliztHL5PGCnJMv07vVgJChsCCLnj9EhHMLcBBwLPBunEtGXJgS/L4I/FNVfwbcLiIv1VAVR/lcU++DU6HE5eJma+8Gjg6E89iY3FYr7ivQh4BlqvpH4Aci8mQlb8KWNQ3DKGqml0PJovTjI+AlkHFpvMOTyC0J5MmVtP+0l2n7P/TWiXrF2ZbOP+bQKxvLtG86g5LCO7SHqfsVNwInzkgj48qxNCVuIuQP4J+2HfN7a104q+rZOJ/InwJ7xUw8b1j104GrgDmqelXw6dsw4m5nnqrOVNV7gFnAiTESzxsyLpis/lVV71bVA1W1ItrWBLRhGCUR1HmUDIpzk5BtUnifA71/V9of7GHaZ5eybXM17zHJ8Esz+HPKIaIVSECj4l34Eu9pinJsL1PelUS+lCnTQl4jQgFuGMeCu2t4QG9W1S/h/IwvJ7x/blwYg9tX8aiqXq6qrdZrGDG1td2B3wD34lZ4G2vk1tPAh4F7gDtUdTcT0IZh1BwFlH4nCKUBb68GuDnNVrNeY9pntUor0qN58vUcckYe7S9Hx5dFSSN7NrHyExGEt6d4FzcgzeXY4tiIkMGf4+N9tYYH9AOBh4AbcZE0apkW4OxASH9BVRPWWxgxsbOJqnojbsX5EGo3zLEAH8OtSF8ZbIg1AW0YRo11yoGwHEBJIrt7cPNrtN/TTcc+1bifcXTOysHVDWUaGwIR/LXF7DoqTPlu2j+RRD6YLcPqswfk0YzinT6WuWtqcEBvVdXvA3/A7fQfSuwE3IRbKTO3DqOadiaq+mlcBJkv4WI1DwWagDOBWar6sXJcIGmvj2EYlWAARYBGvP3z6J49tF+bouGKrUsQPzkKbfRf3Et67zTeXqV2m8ihNJOY5pP9Is7VYJOs5B1b58l+3UMS5dg82IjQh39tG52za3BQ/yhwJdBehtPncGGx+oDFwb/1AS+uV2ZbnNtFIRC7w4CRlH7R6aPAdFX9ioj80noJo8J21gZcAxxJeVacVwMDgZ2tDeznBaA/+PsonA+zX0Y76wB+p6rXA18XkVUmoA3DqL0OG7fhzoOmNN65A+QOWMHU08cy/6+VugdhcaabyafmkNkJGF7qrfFZfBJ4Z73GtF+NZt7iTZUrkD0hjbdrpgzxqdMI/egjHoVLamxAbwLOw7k5pEp02pf5TzKGhcCC4L8DwaAOUNgwPm8QIo9gUB+Oi6zRjtsYuAcu5nS6BPc3HvhZEE/4AhGxoP9GJWxtf+C7vDUzYLGsAubjclk8HQjlBcC/AzsrAIhIPoSdTcWFR3wXLjHLYP2wE8CpwG6qeryIdJqANgyjJvEDId2I7O6RuLuXjq+20Hl9pa7fxsKneui4uAnv0v4SC9gC0IS09uGfA5y0sTLLmbKTwFm5Mqw8J4A8rPIpnDyWhatq5Z0IVsN+gos1O9h52j9xm6DuxiWv6Ik80frPQP968FuK+8yNqgou29r7gcOAPQcppj3ga8BOqnqSiKy0XsIoo62dCFxGuAQwm6MX+DNwP/Aw8IKI+CWysx+qamMgpg/Cfa159yB1617An1T1OBG5b7D1aD7QhmFUjSyKoiNSyHdXMPU6dfqvIqyh/7o+Cg+ky/DlMut8vo9ZyZTpG+94va83IqPLEVM8hZBHLxnLgqdraEBvBx4YpHh+HfgZcADwXhE5V0QeLkY8hxj0VUTmisgP110PuBoYbKznI4FbgjTkhlFqO0uo6hXA9YMUz3OA/wbeJSJHishPRGRhVPEcws6yIvKsiFwKfCD4/TAQ7sUyPrCxmSagDcOoaQo43+EmEl9+lY7f/DvkBrzBsiOLM+CdkEV7S/0pzndCNp3Hu/jXG0wKVjB1zxRyWDk2DgbZBh9eQ/+1NTSovx+4E5dlrBhW4vyl3yUiR4vIA5XM/heI6adF5ExcRrozgecHccoDgVtNRBsltrMkcB1wFsX7O88CDgbeLyI/EJEXK2hneRF5RES+hHPtuBIoNgPhqMDGDjQBbRhGbXfuuE2GTXgH58ndUikR3ca8BYqc7yElX4cOVqE/tBcdH1r3b08wIyV4FyWRplJ7PicRsvjdHt4JbnJQE4P6TOD3FLdZUIFfAfuJyNkiMr/azyMivSJyNc5/81Kg2NT2M3GrZFtb72CUwM4SwLVswqUsBF24LKsHiMjvRaS/ynb2ooicjXOdupnisjyOYpAr0SagDcOIjYjuwyeNHFhg4NaX2Hl0Ja7bQvP/ZvHvKHWCFZdcRRIJ9OIXmZgGmEjfEY3IvqWO/iHBLw8XjmHeczUyqM8Abg0Gsqh04lbCjhSRp+L2bIGQPhfnI/2HIk9zIHCVqqasdzAGYWfrVp6LEc+ZQHjvJSI/F5FczOxsoYh8Dhe3upiNgetWot9nAtowjJqnHyWNNzNN4cfKjLKLB+HJnId/8gC6JFViEZ1FacSbPpz055QZzaDfKEe+wbRbfb57LmN/WCODejvw8yLF84+AfUTkrg0jZ8RQSHcGg/vJuGgEUTkGF5HEMIrlyiLF81zgEBE5vRz7CEpsZ38A9gGKCQU5Cvipqo43AW0YxpAQ0U14/9XLmksrcb0WFiwtwDmAX2pXjkDhndFL33UpZKdSR95wrhu6Io132r7MyteAeG4BfkH08FkrgeNF5HgR6a6Vd1lECiJyA7A/8GwRp7hAVQ+xXsEowta+jAvfFpVbgA+WIlJFBe2sG+dmcibRXTqm4KJ+RIqkYwLaMIz4dfywLnvhad20H1OJa95A569y+L9qKnG3mEMRZGoCPS5XJteNHP5ZWzFvQQ0M6EngO7jNdlHoAj4uIj+q1XdaRJ4MRPT9EQ9tAK4vZoXMqGvx/GG2kMxpIxSAbwGfFZEVNWhjfrAH4bNE/+Lz4UB8m4A2DKO2CTbZeR5yVQ/tu5f7eheCn6FwTj/+86ky+EOXIztGGmEA/eU2zP95jTTrV3Ch2qLQCRwsIn+t9Xc6WCX7FPC9iIduB3x3vaQThrE58TwJF+4tSgKSPHCqiJxX68l8ROQW4AjgtYiHnqeqe5uANgyj5skDDcjWgty4gp2Hl/t6E1i4RNHTfTQX984x5Vw3lmTJf6VGBvW9gfMjHtaF88PsGirvtIisBr4M3BDx0EOAz1ivYGzBzlK49NxRvlgUgNMCV6OhYmf34fYeRJkMpHEbd5tMQBuGUfNknT/0DKVwXiWu10rXXXn8/20sQ4KVkg0ObqjMF+DsCSxcUgOD+khcJIAoK2LrVp67hto7HazwnQb8LuKhF6hqq/UKxmY4E/hYhPI53MrzDUPQzm7BffWKwu7A8SagDcMYEmTwacA7tZtpe1fiemk4P4O/oCGmIjpw3fhhG5231kgTngtMj1B+CUNs5Xkjg3seOI4gPXhIdsCichibnqjuEthaFC4ciuJ5Pa4Fbop4zDmqOsEEtGEYNY/L7EfaQ7+u7FN2P9CRzO/N451YQDNx6yQbnOvGvAK5C2tkUN8Tt9oaliwu2kbXUH+vReQ14Fjg5QiHHauqO1ivYGxgZyncpsGREQ67BZfwZyjbWCGYVMyLcNg4QkQvMQFtGEZNkEFJIfv1sOLQSlxvG+b9eQC9Lh2jbtIDfDTno1/ZlhdiH8otGNQvwvkWhuUiEbmnXt5rEXkBF6c3bAjC0TjfTsNYn0OBj0QoPwf4cq1vGAxpY904V46BCIcdtSV3KRPQhmHUVmcI51Yq1beQuLgf/6m4+EM3OteNG1rpuqtGmuswYN8I5f8IXFZ377TIXcCPIxzyBVXd0XoDI5iojgG+EeGQVcApItJbZzb20wiHbIMLh2cC2jCM2mfAZSncNcfAsZW43ljmrvGRU/MxcOVoROhHn/bg6zUyqI8kWlzVXuDMwDe4HjkfWBSy7GjgKOsRjIDP45KBhOVKEflbHdbTt4kW2u7Tm0uuYgLaMIyaooAC8vmXGN9Uieu1Me/hPHpxNTcUekAeMoqc2krX6hppquOBd0Yo//V68HveFMFqYBS/9sNUdZj1CPVNkNkzSqruObiNdfVoY4uBn0Q4ZDqwmwlowzCGBDmUBmSXJoZ9olLXbGXt1Vn8WekqiegmPAbwr2tj3uwaGdSbcBEmwjIr4sA2VLkVeDpk2V2Bva3K6p7PAWHdeXLAOUEs8nrlesKvQieAj2/qjxvuZm9qxiNZ4nSzYcjgr8s8VlUaEJJVGCQTzrcxthOaJEJDjOPilopmPNZSaIzzPaYRvCLawg/s2sdlxsujVbD00uABihyn7PMrYVbZP/kLS/pX0nFGFn0wAVtVctdNI8Ja/EeExMU11ESfBKaGfjXhWyKSqXclJCIZVb0S+BmEMvJDgHsw6hJVHUW0DaW/FpEH6tzGFqnqT4EzQh7yYVW9QESyWxDQ8vW1FNpylX8kDzgziUzOV3FID8JD/XwAfbg6gsB/IY4vXAohhz87j/yiPkzMmxfbO0Pox79EkEXRxDMpD9qBYUC7oG2KbN+ANCYQ8mhNCeosSgJ932us2AP4eyWuOYrOOT10XJpCLilUqKYSQA5drfDlscxdUyODegL4UkgBCC6ZyIMmh97gTuB5YHKIsh9U1RF1vqJYzxyEiw0ehn7gaqsyAH4JnEi46EBTA1t8brMCupV5d1TraXqZdoQXrsMoG0mEDP4DbXT91N6vNw/iA/BsG50/tNqo8uzZicdbJ9D1zGDO00P7CA/ZPoffkYUPeMjewC5pJJFDiXtcIwXSeA396OcrJaABWhh7ZS/L358mcVCmAt/MUgh9FL41lvlzaug1fR/w3pBl+3Bh6wpm3YGNi6xR1V8DXw1RfAfg7cAjVnP1hap6wDERDvmNiMyxmgOcm9ScoK/aEmng3RsT0LFwGVD2SSqaiMO9eEiDvVsb7daTVgfxIImmB3uOVrpWj2Hecy10/aaNrlP6WPMeD9m3n8KNPvpqEx6JmNdD8KXsgNfYaavKTWBm5YEzs/i95Xb1SrsJ/aw8I75bY6/okcG8OwwPisg/zarfwu2EiwudBPax6qpLpkecqF5jVfbGJLUA/D7CIe/ZuF40DKPu2Z4l/aOZ93Ab809IwO4D+FcorErH2O89j5JEdsiRfG8lr9tKV1cePb+cE4yk2xPRKyRO3I4n+2rlPVLVbXD+z2HwcRt6jLfSCcwPWfZ9wWqkUV8cRvgERffa6vNbuAeX9TQMu5iANgxji4yia9FoOs8pwL5Z9K5GJLYdRQokgXdwpa87m64fDaB3lDHBip/DP7eFuXNr7PXZB2gLWfZp4C9mcW9FRPqBR0MWnw6MsFqrH4LwhR+PMFG9yWrtLcwHFoYsO15VR5uANgwjFG10zhlD538N4J8nkImjD0/OjQ4HrmDn4ZW87mFQ8GG5lE1AKx7emlp6X1RVcFEhwnLzxna2G2/wVMhy2+I2CBv1w25AR8iynTZR3egkNYPbP1PAuUtt7jccl7zoTZhfq2EYm+5koABd3+pm2lMJ9BcpZOtcjGJ1FFw0jvHg70oFNxN203FECo7Llm8joSdw2VJ2/tt2zH2pRl6XVsKn7X6daD6I9ch8YClbXujygAnAP6zK6oaDCB/l5rcistaqbKN8Axcy0g9hY90moA3DiEwb8+5eQfsRAr9MIqPzMRHRCjSRSK2lsG+lBPRSdt5eKFwueMlyBf7LA2lkeyhcqnCUUBMRBt9DePeNRwmftrpeeRDYI9w8l9etuuoDVW0EPhyyeAa4zWptE4YjsjSYpBaFCWjDMEIxlq77eph6TALvdoFkXBRdAUWQvSpxrQvAS+Ff0kRiQn+Zw9hl3SbJw3uY+gDM/98aeEX2J/yq2B0iomZVmx3c88ArVhPGBkwmfJKi+YTfjGpExHygDcMITSvz78yj32iMUdeRBxR2Xcbk1nJf62Taj2hAjqhEDGinLsVL4F3aQ3usfVxVNUm4mKrgQmrNMmsyjKJ4F+Gjb9xnGT5NQBuGERPWkrkqQ2F2XELcOT9oGeehZU3E9Bo7by/IJYBXqaXTPEoDXgtw1UPsE+cvhhOBKSHL/ovwu98Nw3gze4fuGuHPVl0moA3DiAk7sjiTQ8/KoX1x6UBcOLvk28t1fuXQRB7/u43I9pXeRJnBJ4130DSWHxfj12I6MDJk2cdEJGeWZBgR+yHVJtwKdBhWAE9YrZmANmJgu1YFxjrGMf/xAnpjQ0y6kASCwjvKdf4VPPPFNPLxTJXMIA+kkIu6mTYlpq/EjAhlHzYLMoyi2A4XcSUMndjm0rJimwiNUMpZIL2EjjFD/VlHAH00ZLblGQv7swV8Et/PUjjeQ4b7Vb4Xt5GQScqhCeG2QinP3UN7uyAXFar4fHmUNNKSwb9hKTMOiVN2wiD+89tCFl9N+PjGhmG8mSmET5rzWJCy2jABbVSLARSFIxvRjw19g0iQJHszcIa1/OZpY+7zPXTc2YQclanyB4oCIMikbp5rAkqWgMT5HS+/qhGvpRIbBzdHBqUJ7wCf1acAl8XoVWgGdg5Z9mUGETbKMOqc3SOUfdKqywS0UWUU8KDRw2sc6s+acBvjLC1uCAR0Bdych09DdXcU+u49bU2SHVVKAT2N5cel8Q6qtnhefzKbxPtaNx1/aqNzTkxehW2CXxg6gzTVhmFEJ2w0nn5gnlWXCWgjJiK6UAdu0O4ZxbcWD8caBh4bScOiJLJjNZOruIQm2gyJ7XGrnINmJR27FeDbuVi9n9CIjMjjX/siE2fuyOI4hKiaTPiwWrapyTCK6eNUE8D2IYsvKVU/aGwa20RoGEbRTOKF1xXuS1U5pJ0CjXgJn8ROpTjfUmY0F9CrG/FGxW3imHWuHHs103R6TG5pApAIWXaxWY1hFMVwYMeQZXtEZLVVmQlowzBijf9Q3m3iqyoJRECbSnGuJKtPacTbJy6uGxvi4kPL/6xg6p4xuJ0dQpYrYKtihlEsIwjvXthp1WUC2jCMmKP4T+bw11ZbQPvOjWPQGfu66dgtife1XIxdlgpAAkYm8K6fz+SRVb6dsSHLrQFeNIsxjKKYCAwLWfZ5qy4T0IZhxJwsLctAFiVikZlQhg9uMjAxLei1KWREIfb1rjThTR9J4twq30pYt5nVwc8wjOiMjqDZeqy6TEAbhhFzJnBgFng5Dp2JH94Xd6P00nReGm+vbBlWn8sxvcjg04ic1s20vapY7WE/K78IWHx1wyiOcSE1WwFYZNVlAtowjJgjXOiDLqn2CrQPJGBascd3M23vBHLmQBnEs8cbCYnK8MyS9tDrXuHtwypd56qaAlI23hhGRbq4UGaJC2NnmIA2DCP+IppFfjx8hlPFHDSfySMFvS4J6VJvG2xAKMDjAl9NlOGBsy5L4TuTZC+uQn23EN4H+gXc6phhGNGZGLJcAeiz6jIBbRhGDaBIj8biPopT8SNJnNuMN73UrhsCFFDfRy8eQ+eleXR2YxlW6rMoHnJKNx0Hxfg16RMRNWsxjKJoC1luDfCSVZcJaMMwakNC12xf0s20vRqR08oRsi6NkENv24au3wuo4p1fQDNlcuVICHrNKqa2xLSqxezEMAZl5hHWEoxyY5kIDcOoW15hpzYP/b6HpEudSdEDsuha8C9Z929tzJvdTcdPmvFO6C+xYM+5qBxT+ihcBJxgrVvkVFD1Ezi3lFoSIQIsA+4SsUyqhmEC2jAMo4wkSF3QhOzSVwat1ICQQa8Zy4J/vvmaiUv6KXw8iWxXatGeRUniHdtD+92tdN1lLVwU5wPTa/C+/wH8ETABbRgVwFw4DMOoS7rpOCiJHJ8pm3j2F6Twrtnwb2N47uUCfLMcGwp9wENSglzzMpPHWysXxYDdt2EYJqANw6gAWlP+rauY2iLoNR6SLNdynSIXbM3c1zb2t7H035xBHynHhsLAlWNSmsTlF1gfbxiGYQLaMIy4IpO9GtojloGLmvCmlCNddxphAP3zc4y9bZO1xeKM4n8lj2bK0Qn345PCO/wkOg63d9Mw6grF3HhMQBuGUTOMjIl83qIi7qbjiBSJ47JlSpgygPaB/9V9mZXfXNmxzH8kBzenyzDxCJ7MS8DlZXblEMJH17AoHIZRxr4toBGX9tswAW0YRrx79Qs8kPGFKgct8JxCW7C5Mi8zebzAlQJlcd1II+TRH7Qy//GQivIbGXRJskyuHI3I+EaSl5Wx2geAbMiyE1XVxhzDKI4FIcs149J+GyagDcOIMy9zXyMwIQ7fDH2XRGCjXABemsTlzXjblcN1Iwn047+SoHB12GPa6HzFh0sSZaqPDEoK+XQ3HceV4/wi0gusCFm8ycYcwyiaNSHLqdmZCWjDMGqAZl4drTAhHjmadZNuEyfRcXgK7/D+MrgHCuAhKFzYwsIlUY5twftxP/7sMrpy4MElrzNtSpkqPeyNjwtEdNxJm1UbMaSfcG4cSWCSVVf5sTjQhmEMksTOHgzXqrtwCIJ0buxvvUzZTuBywCvHXTYgZNFHWsj8X3T1OXdgGVPPyqF/8aC51PI+j5JGWvrwr32IfQ7ekm92EXQBe4QoNxrnn7k65i/0rcCjMbunvYBp1tfUNS8ChZC6bWurLhPQhmHEHIUZTXhef5U3fisgaN9b/31Gqoc11zch48sR81mAApoDPV9YnCnmHOOY/3gP7Tc2kTijHPWYRWnE+8jOrDge+F6JT78yZLkmYDzQG+f3WUQuiZ2Nqd5gArru6Y8goKdYdZUfc+EwDGMwolWAD/hVXn0WIEOhoOjiDf/WS9+xjXiHZMt0j2k8cuitrXQ9NLjzNF6WwX8xVSZXDnUj7wU9TO0o8ennhyzXAEwwqykKW+wyFgF9Icu2W3WZgDYMI8YsZ+oOwHtyVRfQgkK/j7/4zeJ5yjTB//Y6H+VEiX9BxsHuAnrBYJ9hBM90K/4FHpT8PhMI6hKstCneDa/w9mElrP6wmwg9YLJZTdFzIKO+6QdeCVl2rKqaL7/Nao14vChOLAx1mvFYS6HRWjz0ezEzjWyViUEIOx9Z+Tr0rKc4pBfvzEZEsvivluO6KTx89NvbMv/FUpxvMSNunciaw1J4782VwZVjLQXSeLsNkD0cuKlEp12IC2UXxm52M6spimFWBXVPBnge2DlE2fHAdkF5wwS0US1SCDn82XnkF/XxxN48a/Utoxya6OGZT8Vhacx9StMXpvDOtU7PgYD+m4azldxXsmWa/GVRtqNrZanOtztP5l5k4qGjaRpWrntuQPHIlXIj4WLgdaAtRNldVDUpInmzoJB2ppoEJlpN1Dci4qvqwpDFRwJTTUCHsq9G4Ei2HH1HgOdEZLYJaCM0CWAAnm2j84dWG8Y6ennmnQlk71wMvi4nEQZgoXDbm6Lpbc2zK2utXnd0GxEzNXTLq4OBOoyAnogLZ/eSWVARc0Sj3pkboexuwD1WZVtkK+B6wn3l+Qkw24zSiDr/tcmW8eaZO3JqA15DPBKoKECntUoVegaRHPBCyOKjCfcJ2vgPzcD2se4KjErxbIT6nm7VFYqdcBucw/C8zWoNwxgUrzJ1zyR8cgA/FvczAKr4j1nLVI1/RCi7h1VXJLYKfnHF3EsqxwvA0pBld1PVEVZlW2Q84b0xFpmANgyjaF5kYrqAd3kKaYqDfE4g+PjLfRrnW+tUjUeAsH7NH1TVhFVZaCbgVqErSRQH/LY6b5+KrcCLSA/hv/ZMADrMfLbI1JDv+1u+tJmANgwjEsNIn9WEvC8Tky+3TonJwrH8q8dap2oswG0mDMPbTXRFYvIbr3nlWByhbKFulbPqSJxbUqUnq2FIAfuY+WyRsJGB1u31MAFtGEZ0ljP14CRywUCM3B4TbvHgYSEm/iR1iIisAp4OWXyUDeyReDtUPIZod6Q5dT2vJ8DwsGZSomvOijBpmamqYia02QnQ9AiTytdNQBuGEZkVtB/YgHeTQDIuSlWALH4B9M/WQlVnVoRm+5BVV6gBXqiOz3iUFe+pddxEjYTfgLaM0qzWPx5hgrMHsINZ0iaZgIuXHYZnRSRrAtowjIjiuWNmCrnFQ0bHKYBvAqEAL68iN8daqer8hfDh9w5Q1bFWZVtkHDCtCtd9jQ1W2zbD6Dpe5WwBxoQsu1JESvHpbiXwt5BltwYOMDPaJHuy5fjP63hyw38wAW0YxiZ5ghmpXjpOTyG3e8ioXMwiVqVcJ3bvJF543Vqr6szb2CCzGWFobhxbZjrQWoXrrgLWhiy7HZX30Y4LUSKQvFyKCwYi/P4Ihxyuqqb1NiCY9M0MWTzPRnzPrVINw9gorzJtlx1Ze1sKuRp0RC6G4V5zoAX8O621qk+QXfCBCIccbf6ZW+TAKl33NaA3ZNlqRAmJCztGKLu0hNf9E+G/ELwPeIeZ0ltoxa1Ah+El3EZpE9CGYWyabqZN6aX9KoFZDcjBOTSW2+yTCHl0UYr8363VYsPtQH/IsvvawL5pVDVNlVbpg+Q4YQV0Cy6Wbj0SJUzcghJedxHwaMiyaeDzZlEb7X+2CVn28WCjtAloo7j+3KogLsIxUXI9u4LJk15l2uE9dNwu6ONpvDNAx2TQ2DZ8g9vU/vvR5r4RJ+YC/wxZthk42qpsk+xGdbM2zosg0HapwwlOMoKAXgWsKOEER4FbIxxyqKq2mkm90XYCfC7CIfdufCw2jBDKWSC9hI4xQ/1ZRwB9NGS25Zm1cb3HAvnRxbZFCm9Uivw2Pl6T4k8GbzroriA7p2ArQcih9Md8vuQBWfw+Rf7PLDQ+iEhBVW8C3hPykM+p6ndEZJHV3lv4fJXH6H+FbXbgncBtddY+rREE9FJK5AO9HnfhQquF8cPeNpisXmVmBUA74b/urGITEYZMQBtbZMCtQh7ZiH5sqD9rkgRJsjcDZ8RTPCseydsa0aKCYSh+QwFpUkgMIyk+iu9cIcjW0EeGBoQ+9IGxzHvKLDR2/AHoIdzmt9HAScDZVm3r2albLTyoyrfxLG7zVBidsKeqSomiTNQKuxE+icpcEcmU8uIi8qqq/g44LeQhJ6vqTSKy0iyMYwnvt/83NkjhbQLaiCC6wINGD69xqD9rkJRjRLzvka2kSO8rRVEEAfpqNO+IADm0AFxv1hnD9hF5RVV/Dpwe8pBjVPX7IvKC1d4bHI2LVFJNOoOJ0LYhyu4clFtWR230PsInR3miTPdwM/AloClE2R2Ak4GL6nxyug3RfMJ/u6mJoflAG6FFdAGtix9IrJWlP4i28IO2rOVloga3Yv5gG7s+YJYZW24m/GbC0cAFVmVvDPCjA6FTbV4DwsZXbwH2qqM2ShLeBaBA+A1/USerTwG/jXDIaaq6Q52b2FHB+xqGbuCPm/qjCWjDMGoGAfJoQZErhdsKViMxbSeRp4HfRDjkUFXd22oOgGOIQfa4YNXt4QiHHFJHYQnbgRkRRNgzZbyXHxM+w2FdT1ZVdRxwaoRDfiMiy0xAG4ZR8zS6TY732upzTXAN4TMTNgHXqOqIeq4wVR1PeNeXSvAnnB90GPalOklfqsFRhM9gNxuXPbBc/JVNRInYBJ9R1YPq1MTOwcUtD0MO+MnmCpiANgyjJvCAHNoH/nm2+hx/RGQOECVKym7A1+q82r5K9X2f12cezhc6DGOBT9bBJGc4cGiEQ35Xzs2VQQKj8yJMVpPBZHVsnU1OdweOj3DIX9iCC5MJaMMwaoIGPHz0u2NZ8LTVRs1wCdHi356iqgfUY0Wp6keAL8ZsEtQP3B3hkGNVtWmIN9XBwKSQZbvZRAi0ErfT02xhtXQDpgBX1pFtpYGrCbfZEtxWoytEpGAC2jCMmqYRIUNhjsK3rDZqBxFZDFwW4ZBm4MbAlaGexPN2wHeJZ2SsXxF+dXMGQ3gVOhBiZxE++sZ9IrK8Qrd3OeGzR4Jz5TipTkzsTKJtcn0Q2KKboAlowzBiTQLIoRnFO72VrtVWIzXHD4DHI5TfCbhJVZvroXJUNYULybjTZootgarFnXwa58cbltMDoTkUOQKYHrJsAReNplKT1UXA+REPu2Sof/FR1f0i1ks/8A2RLUfjMgFtGEZsESCFRwG9qI15s61GarANRfpwiVL6Ixx2AHBVEC5sqHMpcMhm/r4KuJgqRZ8MhMSPIxyyG+GTe9SSEGshWgSLpyJOPErBj9lM2LWNMAL4paoOyVTsqjoJ+BEQJYfFr0XkkTAFTUAbhhFbmvHIULi1leFXWG3UtIieFYjAKPw3cK2qJoZqvajqySHE5u3AY7iPMdXiD7iV6LCcq6rTh1hzXUS08ILXichAhe0sj3NXiOLK0QLcrqrtQ8y2RgE/BHaMcFg38M2whU1AG4YRS5oQ+vD/1kfDicKTOauRmudqXFi0KJwEXDcURbSqngJcu4Vx+LVg4rEStxJdrQlQP3AF4VfBRwLXq+pWQ6StjgSOi3DIU0SLg17KtuoCTiGay08HcKeq7jyExPOtwAcjHnphlIyoJqANw4gdaYQs2uXDFyby7EqrkdpHRDLACcCLRYjoHwwhMeap6hm4ONlbmhhcKyIvAllgTZVv/TbgzxHK74kLl5ao8fbaE+ejHtadyA+EWH8Vbe1W4IaIh7UD99S6T3Qgnm8BZkY89G7cinVoTEAbhhErGhEG0C4fPbiNzvlWI0NKRD8PHAtE3Qx6LPAbVZ1a44P7COB7wFUhxPMc3Ar1urHaq3Lb5XBxuvsiHPYF3BeEZI22VztwEy6DX1huFZE7Y3D7XwXuj3jM9jh3jmNrtL3acCvPB0Y8dClwSuACYwLaMIzaI+0yDXb5JA9ppavLamRIiuiHcBnBoibD2Q/4k6oeXKOD+y44f+YvhSi+FviyiKybaPwb585R7bZ7HBduLwonUYO+7MHK8++BKJO2JcBXYmJna3Bp4aP2oyOBH6vqj2vpq4+q7or7QhJ15XkAODmK64YJaMMwYiie/X/56MGt/KvTamRIi+gbcZvnooro7XEr0d8LVptqYWBPBPF2H4wwuJ+3fiSAIJJJXEI4fgt4JOIxJ+FWNmulzT4N3BVRPBeAs0VkSYzsbCku8Usx/emxwAOq+oEaaK/jAvG8axGHXygidxRzXRPQhmFUFS8Qzxn8u7Pk9rOV57oR0dfzHxeFKCRwvtSzVPWzcV7ZVNV348KKXQ+EFY83sfFVXi8m7bYat4reHfHQQ4AHVXXfGLfXGFW9GvgFMCri4dcGvsdxs7OuoO6L6VdnAPer6vWqumMM22snVf05LlRdMZOzH+A2xxY9dhmGYVSFFIIAWfSqftZ+alte6LZaqSu+ggu7lS/i2A5coop7VXWmqkpcHkpVd1fVm4GHiOaPeR9w5iZSCMfmq4yIPAd8Hvf5Owq7AHer6g2qOjlG7SWqegQu7fbpRZzibuC8GE9Wuyh+JTqF+4LwmKqeHcTDrnZ7tajq2cCjwFFFnuZe4KzAt98EtGEYtYHgYjz76MsF9KgWOs/aniX9VjN19h6IFETkaopz51jH/sFgeK+qHqqqW1dpUE+r6v7BitjDwGeBpgineA74rIj8exN/XxuztrsnEJtR2y0NnAg8oqpXVHNjqKoOU9VDg/fnlkDgR+VJ4OggykycbW3dSvSzRZ6iFZcu/FFV/R9VnVIl4XxGIJwvD+6pGO4HPh34iRdNPWR5MgwjRjQg5EEz+L/sJ3HueJ572Wql7oX0Daq6FJdJbUyRc7KZwW+hqt6OS/7xzHob8coxoDcDk4GPAJ/CZeErZiX8iUA899RYu30vWPm/tgg90QacBXxRVe8Ffgc8LCLLyizCmoF3Ah/FrcpOG8TpuoCjROTVGmmvriBM3U3BO1sMk4BLgP+pRLsFaeFnBPb1Cdw+iMHwW+A4ERl0eFQT0IZhVIQUQsr5Oj+t8M0WOn9ntWKsN7jfoapLgBuDAbNYJgP/E4izxao6G7di9QwuSsKyID11MYP5WGDbQIDtBewRCIqmQdzvfcBnRGRL2eMWxHjyA3AdxWVL3Ao4PPi9pqqPAX8HHgdeCNqr6JVCVd0GGI/bYLYX8C5czOPB6p8HgP8WkYU1ZmcrVPWTuM2gp1J8hsuytJuqNgITgZ1wiVAOAN5WgvZS3F6EMwfjtmEC2jCMipFESAI59PkB9Hs++qNWulZbzRgbGdyfUNX9gEuB4xmcm2EyELeTcPGIwW18W6aqy4CXgZ7gv5uiORBbrcGgvm3wK5X74y3AiZtx21if1TFut8F+QVjHaODDwQ9c8phXVLUbt9q7Nvjv5gTQhKC9JgDrJjzjSvzIvwOOCdlucWyvDHBmMLm8lmgpysvRbi1Be20f2NlEYHgJH3kNLnTmjSKipTqpCWjDMErfQeNcNYINgot89HsZ9CfbMb/XasfYwuD+OnCCqj4MXIRbiSoVbcFvepUfsx+XovuyTWwY3BiFmLdbqb4grM9wYErw2zMGj7mu3a4UkYEhYGt3qurTuNXoo0p46ji127PASSLycKlPbJsIDcMoGSmEJucCWhjAfziHfj6Lv8cYuq4w8WxEHNx/CbwPl5I4M4Qe7V/Ah0Xk2xHEM7jP4nEX0U8A++J8ZDND7JV8Yr12GxhCdrZYRD4DfBqYO4TaKxf0HfuXQzybgDYMo/iON+hAGgLR7Nw0/AV9+Jd7yL7P0vXB0XT+nwlnYxCD+woROTkQZfcBfg0/Tj9wGbC3iMwq4vg8zo8z7m22WkS+ivNdnTUEXsNVOJei/Ytst1qxtVuA9wNfB2q9z34MmCkiJ4tI2UKjmguHYRgRBLOQABIIeZQ8ujqPzsuiD4F3d5KBf47mhdettowSD+6PqupHAlF2Oi7ahtTI7SsuIsg3RGTOIM5TqAUBvV6b/VVVPwwcGoiySTX22mVwqdcvF5Fn68TOVgIXBaEYTwSOprgEJdXiCeA7wO0iUvawqCagDcN4Q4nIGz8nlD0EUApAHsVHlxVgiYc+WkD+5lN4vJfUkrcxd8Bq0Sjz4O4D96nq/YGQ/gLwcdxGvzjSD9wJ/AT4c7GRP9bjedxGwtE11Gb9wM2qejdwWNBmu8f8tl8Hfg98J3BJqUdbexE4W1V/gEuYczguuk1cmQNcEwjnirkOxUZAC6Sb8UhWcYLdjEcffqwmFYo2NpunTUXfgbUUGt/6fqoo0tyMR6F2FoFCUUDJ4ucVEUGzAv2K/jsPSz3kpQK6RJzfZpdPYslY5i63N8Wo4uCuuEQI96vq2wJhdjAuCUYc0no/Hwiwn4nIUyU1VWjczN8bY9xmvcD3VPWnOHecY4D9cKHQ4tENukQ2twC/EZEFZmkQhOg7T1WvDCatn8O5ecSh3XpwoQRvAf5UiRXnjejWOIhEvF7aP5pCtslV8T6a8egn93ALC+bF5QXuZtpew5BpfTXt+ldrAlrntTHvTZsOljKjuYHVn/DwmodSS3iAj9+n6GJISgJeTaLLB9CBFrr6JOablgwDQFWbcCubM4F9cGm+Wyt0eR+XInl2IJz/FkQSKfUzDgO+iYtwoBsZyxcAV5dgpbtSbTYpENEzcbGZJ1T4FlYFdfYAzsXmiWqIsBq0tUm4eNoH4qKtTK6glnwZ59/8AHCviCyq6gTDXgfDMAxjiA3yE3Ar0h8AdsQl0RgLjABSgzh1Hy6mbWfwewL3+fhfcU/lHPP2asVlBJyBS1IzGeczPRKX+nsw5IM2exUX0uxF4BHgaeCFWplwxLTdRuDipO8BvAOX8GRKMMlLU3yginVtthT39fNZ3IbUzjhl6zQBbRiGYQz1gb4ZGIaLKd2GS64xDJi6mXFQgIFAKOeARbhMhsuBVSKSt5otW3ulgsnOxKC9tg/E2JTg3zfnR6fA/ECArQxE2EvA6+VM626AqiaD9hkXtNtOOFfhLbWbh0ty9FLQZssCe1spIn1Ws4ZhGIZhGIZhGIZhGIZhGIZhGIZhGIZhGMYm+H9JY9ae0l9ipwAAAABJRU5ErkJggg==" alt="TEDxGUC"><span class="sub">Cashbook</span><select class="inp season" id="seasonSel" aria-label="Season"></select></div>
+      <div class="sp"></div>
+      <span id="liveDot" class="lbl" title="Live sync"></span>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      <button class="btn red" id="addBtn"><span style="font-size:18px;line-height:1">+</span><span class="t">New entry</span> <span class="kbd t">N</span></button>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="overview">Overview</button>
+      <button role="tab" data-tab="ledger">Ledger</button>
+      <button role="tab" data-tab="team">Team wallets</button>
+      <button role="tab" data-tab="phases">Phases &amp; budget</button>
+      <button role="tab" data-tab="sponsors">Sponsors &amp; income</button>
+      <button role="tab" data-tab="fatora">Fatora<span class="badge" id="fatoraBadge" hidden></span></button>
+      <button role="tab" data-tab="activity">Activity</button>
+      <button role="tab" data-tab="ask">Ask Claude</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner" class="banner" hidden style="margin-bottom:20px"></div>
+  <div id="seasonBanner" class="banner" hidden style="margin-bottom:20px;border-color:var(--dim);color:var(--muted);background:transparent"></div>
+
+  <!-- OVERVIEW -->
+  <section class="tab" id="tab-overview">
+    <div class="heroes">
+      <div class="hero">
+        <div>
+          <div class="cap">Cash in hand</div>
+          <div class="big num" id="heroCash">—</div>
+          <div class="note" id="heroCashNote">Cash collected minus cash spent. All cash is held by the curator.</div>
+        </div>
+        <div class="splits" id="cashSplits"></div>
+      </div>
+      <div class="hero bank">
+        <div>
+          <div class="cap">Bank balance</div>
+          <div class="big num" id="heroBank">—</div>
+          <div class="note" id="heroNote">After the 14% tax and all bank payments.</div>
+        </div>
+        <div class="splits" id="bankSplits"></div>
+      </div>
+    </div>
+    <div class="alerts" id="alerts"></div>
+    <div class="grid">
+      <div class="panel c7">
+        <div class="panel-h"><h2>Bank waterfall</h2><span class="lbl" id="wfCap">Before tax → after cash out</span></div>
+        <div id="waterfall"></div>
+      </div>
+      <div class="panel c5">
+        <div class="panel-h"><h2>Cash custody</h2><span class="lbl">All cash sits with the curator</span></div>
+        <div id="holdMini" class="rank"></div>
+      </div>
+      <div class="panel c7">
+        <div class="panel-h"><h2>Where the money went</h2><span class="lbl">Cash + bank spend by phase</span></div>
+        <div id="phaseStack"></div>
+      </div>
+      <div class="panel c5">
+        <div class="panel-h"><h2>Top money in</h2><span class="lbl">Bank in, by source</span></div>
+        <div id="sponsors" class="rank"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEDGER -->
+  <section class="tab" id="tab-ledger" hidden>
+    <div class="panel-h" style="margin:0"><h2>Ledger</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="csvBtn">Export CSV</button>
+        <button class="btn sm" id="xlsxBtn">Download as Excel</button>
+      </div>
+    </div>
+    <div class="seg" id="kindSeg">
+      <button data-k="all" aria-pressed="true">All</button>
+      <button data-k="cash">All cash</button>
+      <button data-k="cashIn">Cash in</button>
+      <button data-k="cashOut">Cash out</button>
+      <button data-k="bank">All bank</button>
+      <button data-k="bankIn">Bank in</button>
+      <button data-k="bankOut">Bank out</button>
+      <button data-k="planned">Planned</button>
+    </div>
+    <div class="filters">
+      <input class="inp search" id="q" type="search" placeholder="Search description, sponsor, member…  ( / )" aria-label="Search">
+      <select class="inp" id="fMember" aria-label="Member"></select>
+      <select class="inp" id="fPhase" aria-label="Phase"></select>
+      <select class="inp" id="fFatora" aria-label="Fatora">
+        <option value="">Any fatora</option><option value="Yes">Fatora: Yes</option><option value="No">Fatora: No</option><option value="none">Fatora: not set</option>
+      </select>
+      <button class="btn sm ghost" id="clearF">Clear</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th data-s="order">#</th><th data-s="kind">Type</th><th data-s="desc">Description</th><th data-s="amount" class="r">Amount</th><th data-s="member">Member / Party</th><th data-s="phase">Phase</th><th data-s="fatora">Fatora</th><th></th>
+      </tr></thead>
+      <tbody id="ledgerBody"></tbody>
+      <tfoot id="ledgerFoot"></tfoot>
+    </table></div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="tab" id="tab-team" hidden>
+    <div class="panel-h" style="margin:0"><h2>Team wallets</h2><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="lbl">Who brought money in and who spent it</span><button class="btn sm" id="teamPeople">Manage stakeholders</button></div></div>
+    <div class="panel curator" id="curatorCard"></div>
+    <div class="members" id="members"></div>
+    <div class="panel">
+      <div class="panel-h"><h2>Reimbursements</h2><span class="lbl">Curator pays back out-of-pocket spending</span></div>
+      <div id="handover" class="handover"></div>
+    </div>
+  </section>
+
+  <!-- PHASES -->
+  <section class="tab" id="tab-phases" hidden>
+    <div class="panel-h" style="margin:0"><h2>Phases &amp; budget</h2><span class="lbl">Set a budget per phase to track burn</span></div>
+    <div class="phases" id="phases"></div>
+  </section>
+
+  <!-- SPONSORS -->
+  <section class="tab" id="tab-sponsors" hidden>
+    <div class="panel-h" style="margin:0"><h2>Sponsors &amp; income</h2><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="seg" id="yearSeg"></div><button class="btn sm red" id="addSponsor" type="button">Add sponsor</button></div></div>
+    <div class="kpis" id="incKpis"></div>
+    <div class="grid">
+      <div class="panel c7"><div class="panel-h"><h2>Income by year</h2><span class="lbl">Net after VAT · sponsors per year</span></div><div id="yearChart"></div></div>
+      <div class="panel c5"><div class="panel-h"><h2>Where the income came from</h2><span class="lbl" id="incSrcCap"></span></div><div id="incSrc" class="rank"></div></div>
+      <div class="panel c12"><div class="panel-h"><h2>Sponsors</h2><span class="lbl" id="spCap"></span></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Sponsor</th><th>Type</th><th class="r">Gross</th><th class="r">VAT</th><th class="r">Net</th><th class="r">In-kind / pledged</th><th class="r">Payments</th><th>Notes</th></tr></thead><tbody id="spBody"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FATORA -->
+  <section class="tab" id="tab-fatora" hidden>
+    <div class="grid">
+      <div class="panel c5">
+        <div class="panel-h"><h2>Invoice coverage</h2><span class="lbl">Cash-out with a fatora</span></div>
+        <div class="ring-wrap" id="ring"></div>
+      </div>
+      <div class="panel c7">
+        <div class="panel-h"><h2>By member</h2><span class="lbl">Missing fatora, EGP</span></div>
+        <div id="fatoraMembers" class="rank"></div>
+      </div>
+      <div class="panel c12">
+        <div class="panel-h"><h2>Chase list</h2><span class="lbl" id="chaseCap"></span></div>
+        <div id="missing" class="missing-list"></div>
+      </div>
+      <div class="panel c12">
+        <div class="panel-h"><h2>Receipts</h2><span class="lbl">Photos and PDFs attached to entries</span></div>
+        <div id="receipts" class="receipts"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section class="tab" id="tab-activity" hidden>
+    <div class="panel">
+      <div class="panel-h"><h2>Activity</h2><span class="lbl">Every add, edit and delete, newest first</span></div>
+      <div id="feed" class="feed"></div>
+    </div>
+  </section>
+
+  <!-- ASK -->
+  <section class="tab" id="tab-ask" hidden>
+    <div class="panel ask-box">
+      <div class="panel-h" style="margin:0"><h2>Ask Claude about the money</h2><span class="lbl">Reads the live ledger</span></div>
+      <div class="chips" id="askChips">
+        <button class="chip">How much cash is in the curator's box, and who needs reimbursing?</button>
+        <button class="chip">Compare this year's sponsorship income with past years.</button>
+        <button class="chip">Which phase cost the most, and what drove it?</button>
+        <button class="chip">Draft a short finance update for the board meeting.</button>
+        <button class="chip">List cash-outs over EGP 5,000 that still have no fatora.</button>
+        <button class="chip">How much do we have left for the Main Event after planned items?</button>
+      </div>
+      <textarea class="inp" id="askQ" placeholder="Ask anything about the TEDxGUC money…"></textarea>
+      <div style="display:flex;gap:8px"><button class="btn red" id="askBtn">Ask</button><button class="btn ghost" id="askStop" hidden>Stop</button></div>
+      <div class="answer" id="askOut"></div>
+    </div>
+  </section>
+</main>
+
+<!-- entry drawer -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Entry editor">
+  <div class="drawer-h"><h2 id="dTitle">New entry</h2><button class="icon-btn" id="dClose" aria-label="Close">✕</button></div>
+  <form class="drawer-b" id="dForm" autocomplete="off">
+    <div class="seg" id="dKind">
+      <button type="button" data-k="cashIn">Cash in</button>
+      <button type="button" data-k="cashOut">Cash out</button>
+      <button type="button" data-k="bankIn">Bank in</button>
+      <button type="button" data-k="bankOut">Bank out</button>
+      <button type="button" data-k="transfer">Bank ⇄ cash</button>
+    </div>
+    <div class="field"><label for="dAmount" id="dAmountL">Amount (EGP)</label><input class="inp amount-inp num" id="dAmount" inputmode="decimal" placeholder="0"></div>
+    <div id="vatLine" class="vatline" hidden></div>
+    <div class="row2" id="fCatRow"><div class="field"><label for="dCat">Income type</label><select class="inp" id="dCat"><option value="sponsor">Sponsorship</option><option value="other">Other income (tickets, merch…)</option><option value="opening">Opening balance (not income)</option></select></div>
+      <div class="field" id="fSponsor"><label for="dSponsor">Sponsor</label><input class="inp" id="dSponsor" list="sponsorList" placeholder="Sponsor name"></div></div>
+    <datalist id="sponsorList"></datalist>
+    <div class="field" id="fxDir" hidden><label for="dDir">Direction</label>
+      <select class="inp" id="dDir"><option value="b2c">Withdraw: bank → cash</option><option value="c2b">Deposit: cash → bank</option></select></div>
+    <div class="field" id="fDesc"><label for="dDesc">Description</label><input class="inp" id="dDesc" placeholder="e.g. Banner w Stand"></div>
+    <div class="field" id="fParty"><label for="dParty" id="dPartyL">From</label><input class="inp" id="dParty" list="partyList" placeholder="Sponsor or vendor"><datalist id="partyList"></datalist></div>
+    <div class="row2">
+      <div class="field" id="fMemberF"><label for="dMember" id="dMemberL">With</label><select class="inp" id="dMember"></select><span id="custodyHint" class="muted" style="font-size:12px"></span></div>
+      <div class="field" id="fPhaseF"><label for="dPhase">Phase</label><select class="inp" id="dPhase"></select></div>
+    </div>
+    <div class="row2">
+      <div class="field" id="fFat"><label for="dFatora">Fatora</label><select class="inp" id="dFatora"><option value="">Not set</option><option>Yes</option><option>No</option></select></div>
+      <div class="field" id="fStatus"><label for="dStatus">Status</label><select class="inp" id="dStatus"><option value="done">Paid / received</option><option value="planned">Planned</option></select></div>
+    </div>
+    <div class="row2" id="fPaidRow"><div class="field"><label for="dPaid">Paid from</label><select class="inp" id="dPaid"><option value="box">Curator's cash box</option><option value="pocket">Own pocket (to reimburse)</option></select></div>
+      <label class="check" id="fReimb" style="align-self:end;padding-bottom:8px"><input type="checkbox" id="dReimb"> Already reimbursed</label></div>
+    <div class="row2"><div class="field"><label for="dDate">Date</label><input class="inp" id="dDate" type="date"></div><div class="field"><label for="dYear">Season / year</label><input class="inp num" id="dYear" inputmode="numeric"></div></div>
+    <label class="check" id="fTax"><input type="checkbox" id="dTaxable"> Remove VAT from this deposit</label>
+    <div class="field"><label for="dNote">Note</label><textarea class="inp" id="dNote" rows="2"></textarea></div>
+    <div class="field" id="fReceipt"><label>Receipt</label>
+      <div id="dReceiptView" class="muted" style="font-size:13px"></div>
+      <input type="file" id="dFile" accept="image/*,application/pdf" class="inp">
+    </div>
+    <div id="dMeta" class="muted" style="font-size:12px;font-family:var(--mono)"></div>
+  </form>
+  <div class="drawer-f">
+    <button class="btn ghost" id="dDelete" type="button">Delete</button>
+    <div style="display:flex;gap:8px"><button class="btn ghost" id="dCancel" type="button">Cancel</button><button class="btn red" id="dSave" type="button">Save</button></div>
+  </div>
+</aside>
+
+<!-- confirm modal -->
+<div class="scrim" id="mScrim" hidden></div>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true">
+  <h2 id="mTitle">Delete entry?</h2>
+  <div id="mBody" class="muted"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" id="mNo">Cancel</button><button class="btn red" id="mYes">Delete</button></div>
+</div>
+
+<!-- settings modal -->
+<div class="modal" id="settings" hidden role="dialog" aria-modal="true">
+  <h2>Settings</h2>
+  <div class="field"><label for="sTax">Tax on bank deposits (%)</label><input class="inp" id="sTax" inputmode="decimal"></div>
+  <div class="field"><label>Stakeholders</label><button class="btn sm" id="sPeople" type="button" style="justify-self:start">Manage stakeholders…</button></div>
+  <div class="field"><label for="sPhases">Phases (comma separated)</label><input class="inp" id="sPhases"></div>
+  <div class="field"><label>Season</label><button class="btn sm" id="sNewSeason" type="button" style="justify-self:start">Close this season and start the next…</button><span class="muted" style="font-size:12px">Carries the closing cash and bank balances into the new season as opening balances and starts a fresh ledger.</span></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" id="sCancel">Cancel</button><button class="btn red" id="sSave">Save</button></div>
+</div>
+
+<!-- sponsor modal -->
+<div class="modal" id="spModal" hidden role="dialog" aria-modal="true" aria-labelledby="spTitle">
+  <h2 id="spTitle">Add sponsor</h2>
+  <div class="muted" style="font-size:13px">Use this for sponsors who gave products, services or a promise instead of money. Sponsors who paid appear on their own from Bank in and Cash in entries.</div>
+  <div class="field"><label for="spName">Sponsor name</label><input class="inp" id="spName" list="sponsorList"></div>
+  <div class="row2"><div class="field"><label for="spType">Type</label><select class="inp" id="spType"><option value="in-kind">In-kind (no money)</option><option value="pledged">Money pledged, not received yet</option><option value="money">Paid sponsor (notes only)</option></select></div><div class="field"><label for="spYear">Year</label><input class="inp num" id="spYear" inputmode="numeric"></div></div>
+  <div class="field"><label for="spValue">Estimated value (EGP, optional)</label><input class="inp num" id="spValue" inputmode="numeric"></div>
+  <div class="field"><label for="spNotes">What they gave / notes</label><input class="inp" id="spNotes" placeholder="e.g. 300 drinks for the main event"></div>
+  <div style="display:flex;gap:8px;justify-content:space-between"><button class="btn ghost" id="spDel" type="button">Remove</button><div style="display:flex;gap:8px"><button class="btn ghost" id="spCancel" type="button">Cancel</button><button class="btn red" id="spSave" type="button">Save</button></div></div>
+</div>
+
+<!-- stakeholders modal -->
+<div class="modal" id="people" hidden role="dialog" aria-modal="true" aria-labelledby="pTitle">
+  <h2 id="pTitle">Stakeholders</h2>
+  <div class="muted" style="font-size:13px">The people who collect or spend cash. Renaming someone updates every entry they are on.</div>
+  <div id="peopleList" class="plist"></div>
+  <div class="padd"><input class="inp" id="pNew" placeholder="New stakeholder name" aria-label="New stakeholder name"><input class="inp" id="pNewRole" placeholder="Role (optional)" aria-label="Role"><button class="btn sm red" id="pAdd" type="button">Add</button></div>
+  <div style="display:flex;justify-content:flex-end"><button class="btn ghost" id="pDone" type="button">Done</button></div>
+</div>
+
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastAct" hidden>Undo</button></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="backend.js"></script>
+<script>
+(() => {
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (Math.round(n) || 0).toLocaleString('en-US');
+const compact = n => { const a = Math.abs(n); return a >= 1e6 ? (n/1e6).toFixed(2).replace(/\.?0+$/,'') + 'M' : a >= 1e4 ? Math.round(n/1e3) + 'K' : fmt(n); };
+const KIND = {cashIn:'Cash in', cashOut:'Cash out', bankIn:'Bank in', bankOut:'Bank out'};
+const PHASE_COLORS = ['#EB0028','#FF8296','#F5F2F1','#8C8387','#C2410C','#5A2B36','#F5B638','#3BD38A'];
+const S = {
+  entries: new Map(), activity: [], loaded: false,
+  settings: {taxRate: 14, members: ['KR','ELSHOSH','Boda','Khobby'], phases: ['Pre-Camp','Camp','Salon','Main Event','General'], budgets: {}},
+  tab: 'overview', f: {kind:'all', q:'', member:'', phase:'', fatora:'', sort:'order', dir:1},
+  db: null, user: null, assets: null, downloads: null, sample: null, meId: null, canWrite: true, names: {}, editing: null, dKind: 'cashOut', sponsors: new Map(), year: null, spEdit: null, allEntries: new Map(), main: {}, seasonDoc: null, season: null, seasonUnsub: null
+};
+
+/* ---------- calculations ---------- */
+const curYear = () => +S.main.currentYear || +S.settings.currentYear || new Date().getFullYear();
+const SEASON_KEYS = ['members', 'curator', 'roles', 'phases', 'budgets'];
+function applySettings() {
+  const base = {taxRate: 14, members: ['KR', 'ELSHOSH', 'Boda', 'Khobby'], phases: ['Pre-Camp', 'Camp', 'Salon', 'Main Event', 'General'], budgets: {}, roles: {}, curator: ''};
+  S.settings = {...base, ...S.main, ...(S.seasonDoc || {})};
+}
+function scope() { S.entries = new Map([...S.allEntries].filter(([, e]) => yearOf(e) === S.season)); }
+function watchSeason() {
+  S.seasonUnsub?.(); S.seasonUnsub = null;
+  if (!S.db || S.season == null) return;
+  S.seasonUnsub = S.db.doc('settings/season-' + S.season).onSnapshot(d => { S.seasonDoc = d.exists ? d.data() : null; applySettings(); render(); });
+}
+function setSeason(y) {
+  if (y === S.season) return;
+  S.season = y; S.year = y; S.seasonDoc = null;
+  try { localStorage.setItem('tedx-season', String(y)); } catch {}
+  Object.assign(S.f, {member: '', phase: ''});
+  applySettings(); scope(); watchSeason(); render();
+}
+const vatRateOf = e => e.kind === 'bankIn' && e.taxable !== false ? (e.vatRate != null ? +e.vatRate : (+S.settings.taxRate || 0)) : 0;
+const vatOf = e => (+e.amount || 0) * vatRateOf(e) / 100;
+const yearOf = e => +e.year || curYear();
+const catOf = e => e.category || (e.kind === 'bankIn' ? 'sponsor' : 'other');
+const sponsorOf = e => String(e.sponsor || (e.kind === 'bankIn' ? e.counterparty : e.desc) || 'Unnamed').trim();
+const isIncome = e => (e.kind === 'cashIn' || e.kind === 'bankIn') && e.status !== 'planned' && !e.transferId && catOf(e) !== 'opening';
+const curatorName = () => S.settings.curator && S.settings.members.includes(S.settings.curator) ? S.settings.curator : '';
+function calc() {
+  const all = [...S.entries.values()];
+  const done = all.filter(e => e.status !== 'planned');
+  const sum = (arr, k) => arr.filter(e => e.kind === k).reduce((a, e) => a + (+e.amount || 0), 0);
+  const rate = (+S.settings.taxRate || 0) / 100;
+  const cashIn = sum(done,'cashIn'), cashOut = sum(done,'cashOut');
+  const bankIn = sum(done,'bankIn'), bankOut = sum(done,'bankOut');
+  const taxable = done.filter(e => e.kind === 'bankIn' && e.taxable !== false).reduce((a, e) => a + (+e.amount||0), 0);
+  const tax = done.filter(e => e.kind === 'bankIn').reduce((a, e) => a + vatOf(e), 0);
+  const bankNet = bankIn - tax, bankBal = bankNet - bankOut, cashBal = cashIn - cashOut;
+  const planned = all.filter(e => e.status === 'planned');
+  const plannedOut = planned.filter(e => e.kind === 'cashOut' || e.kind === 'bankOut').reduce((a, e) => a + (+e.amount||0), 0);
+  // members
+  const members = {};
+  const mem = m => members[m] ||= {name:m, collected:0, spent:0, owed:0, fYes:0, fNo:0, fNone:0, missAmt:0, count:0};
+  S.settings.members.forEach(mem);
+  done.forEach(e => {
+    if (!e.member) return;
+    if (e.kind === 'cashIn') mem(e.member).collected += +e.amount||0;
+    if (e.kind === 'cashOut') {
+      const m = mem(e.member); m.spent += +e.amount||0; m.count++;
+      if (e.paidFrom === 'pocket' && !e.reimbursed) m.owed += +e.amount||0;
+      if (e.fatora === 'Yes') m.fYes += +e.amount||0; else { if (e.fatora === 'No') m.fNo += +e.amount||0; else m.fNone += +e.amount||0; m.missAmt += +e.amount||0; }
+    }
+  });
+  Object.values(members).forEach(m => m.hold = m.collected - m.spent);
+  // phases
+  const phases = {};
+  const ph = p => phases[p] ||= {name:p, cash:0, bank:0, items:[], planned:0};
+  S.settings.phases.forEach(ph);
+  all.forEach(e => {
+    if (e.kind !== 'cashOut' && e.kind !== 'bankOut') return;
+    const p = ph(e.phase || 'General');
+    if (e.status === 'planned') { p.planned += +e.amount||0; return; }
+    if (e.kind === 'cashOut') p.cash += +e.amount||0; else p.bank += +e.amount||0;
+    p.items.push(e);
+  });
+  Object.values(phases).forEach(p => p.total = p.cash + p.bank);
+  // fatora
+  const outs = done.filter(e => e.kind === 'cashOut');
+  const fYesAmt = outs.filter(e => e.fatora === 'Yes').reduce((a, e) => a + (+e.amount||0), 0);
+  const missing = [...S.entries.entries()].filter(([, e]) => e.kind === 'cashOut' && e.status !== 'planned' && e.fatora !== 'Yes').sort((a, b) => b[1].amount - a[1].amount);
+  const pocketOpen = [...S.entries.entries()].filter(([, e]) => e.kind === 'cashOut' && e.status !== 'planned' && e.paidFrom === 'pocket' && !e.reimbursed);
+  const owed = pocketOpen.reduce((s, [, e]) => s + (+e.amount || 0), 0);
+  // income + sponsors per year
+  const years = {};
+  const Y = y => years[y] ||= {year:y, gross:0, vat:0, net:0, spBank:0, spCash:0, other:0, inKind:0, sponsors:new Map()};
+  Y(curYear()); if (S.season) Y(S.season);
+  [...S.allEntries.values()].filter(isIncome).forEach(e => {
+    const y = Y(yearOf(e)), a = +e.amount || 0, v = vatOf(e);
+    y.gross += a; y.vat += v; y.net += a - v;
+    if (catOf(e) !== 'sponsor') { y.other += a; return; }
+    if (e.kind === 'bankIn') y.spBank += a - v; else y.spCash += a;
+    const n = sponsorOf(e), key = n.toLowerCase();
+    const s = y.sponsors.get(key) || {key, name:n, gross:0, vat:0, net:0, payments:0, inKind:0, type:'money', regId:null, notes:''};
+    s.gross += a; s.vat += v; s.net += a - v; s.payments++; y.sponsors.set(key, s);
+  });
+  S.sponsors.forEach((r, id) => {
+    if (!r?.name) return;
+    const y = Y(+r.year || curYear()), key = String(r.name).trim().toLowerCase();
+    const s = y.sponsors.get(key) || {key, name:String(r.name).trim(), gross:0, vat:0, net:0, payments:0, inKind:0, type:'money', regId:null, notes:''};
+    s.regId = id; s.notes = r.notes || ''; s.inKind = +r.value || 0;
+    s.type = r.type === 'in-kind' ? (s.payments ? 'both' : 'in-kind') : r.type === 'pledged' ? (s.payments ? 'money' : 'pledged') : 'money';
+    if (r.type === 'in-kind') y.inKind += s.inKind;
+    y.sponsors.set(key, s);
+  });
+  return {curator: curatorName(), owed, box: cashIn - cashOut + owed, pocketOpen, years, cashIn, cashOut, cashBal, bankIn, bankOut, taxable, tax, bankNet, bankBal, total: cashBal + bankBal, planned, plannedOut, members, phases, fYesAmt, outTotal: cashOut, missing, done, all};
+}
+
+/* ---------- rendering ---------- */
+function money(n, cls = '') { return `<span class="num ${cls}">${n < 0 ? '−' : ''}${fmt(Math.abs(n))}</span>`; }
+
+function renderOverview(c) {
+  const big = v => `${v < 0 ? '−' : ''}${fmt(Math.abs(v))}<small>EGP</small>`;
+  const splits = arr => arr.map(([l, v]) => `<div class="split"><span class="lbl">${l}</span><b>${money(v)}</b></div>`).join('');
+  const plan = k => c.planned.filter(e => e.kind === k).reduce((s, e) => s + (+e.amount || 0), 0);
+  $('#heroCash').innerHTML = big(c.cashBal);
+  $('#heroBank').innerHTML = big(c.bankBal);
+  $('#heroNote').textContent = `After the ${S.settings.taxRate}% tax and all bank payments.`;
+  $('#heroCashNote').textContent = c.curator ? `Cash collected minus cash spent. All of it is held by the curator, ${c.curator}.` : 'Cash collected minus cash spent. Set a curator in Manage stakeholders to say who holds it.';
+  $('#cashSplits').innerHTML = splits([['Cash in', c.cashIn], ['Cash out', c.cashOut], [`In ${c.curator || 'the curator'}'s box`, c.box], ['Owed to members (own pocket)', c.owed]]);
+  $('#bankSplits').innerHTML = splits([['Bank in (before tax)', c.bankIn], [`VAT ${S.settings.taxRate}% removed`, c.tax], ['Bank out', c.bankOut], ['Planned bank spend', plan('bankOut')]]);
+
+  // alerts
+  const a = [];
+  const missAmt = c.missing.reduce((s, [, e]) => s + (+e.amount||0), 0);
+  if (c.missing.length) a.push(['bad', `${c.missing.length} cash-outs without a fatora · EGP ${compact(missAmt)}`, 'fatora']);
+  const noAmt = c.planned.filter(e => !+e.amount);
+  if (noAmt.length) a.push(['warn', `${noAmt.length} planned items have no amount yet`, 'planned']);
+  const over = Object.values(c.phases).filter(p => +S.settings.budgets?.[p.name] > 0 && p.total > +S.settings.budgets[p.name]);
+  over.forEach(p => a.push(['bad', `${p.name} is over budget by EGP ${compact(p.total - S.settings.budgets[p.name])}`, 'phases']));
+  if (c.owed > 0) a.push(['warn', `EGP ${compact(c.owed)} to reimburse to members who paid from their own pocket`, 'team']);
+  if (!c.curator) a.push(['warn', 'No curator set. Pick who holds the cash in Manage stakeholders', 'team']);
+  if (c.bankBal < 0) a.push(['bad', 'Bank balance after tax is negative', 'ledger']);
+  if (!a.length && S.loaded) a.push(['good', 'All clear: every cash-out has a fatora and no phase is over budget', 'overview']);
+  $('#alerts').innerHTML = a.map(([k, t, go]) => `<button class="alert ${k}" data-go="${go}"><span class="dot"></span>${esc(t)}</button>`).join('');
+
+  $('#waterfall').innerHTML = waterfall(c);
+  $('#wfCap').textContent = `Before tax → after cash out`;
+  const owedRows = Object.values(c.members).filter(m => m.owed > 0).sort((x, y) => y.owed - x.owed);
+  $('#holdMini').innerHTML = `<div class="rank-row"><span class="n">★</span><span class="trunc"><b>${esc(c.curator || 'No curator set')}</b> <span class="muted">· curator's box</span></span>${money(c.box)}</div>`
+    + (owedRows.length ? owedRows.map(m => `<div class="rank-row"><span class="n">↩</span><span class="trunc">${esc(m.name)} <span class="muted">· paid from own pocket</span></span>${money(m.owed, 'neg')}</div>`).join('') : '<div class="muted" style="font-size:13px">Nobody is owed money for out-of-pocket spending.</div>');
+
+  // phase stack
+  const ps = Object.values(c.phases).filter(p => p.total > 0);
+  const tot = ps.reduce((s, p) => s + p.total, 0) || 1;
+  $('#phaseStack').innerHTML = !ps.length ? '<div class="empty">No spending recorded yet.</div>' :
+    `<div class="stack">${ps.map((p, i) => `<i title="${esc(p.name)}" style="flex:${p.total};background:${PHASE_COLORS[S.settings.phases.indexOf(p.name) % 8] || PHASE_COLORS[i % 8]}"></i>`).join('')}</div>
+     <div class="rank" style="margin-top:16px">${ps.sort((x, y) => y.total - x.total).map(p => `<div class="rank-row"><i style="width:10px;height:10px;border-radius:2px;background:${PHASE_COLORS[S.settings.phases.indexOf(p.name) % 8] || '#888'}"></i><span class="trunc">${esc(p.name)} <span class="muted">· ${Math.round(p.total / tot * 100)}%</span></span>${money(p.total)}</div>`).join('')}</div>`;
+
+  // sponsors
+  const sp = {};
+  c.done.filter(e => e.kind === 'bankIn').forEach(e => { const k = e.counterparty || e.desc || 'Unknown'; sp[k] = (sp[k] || 0) + (+e.amount||0); });
+  const top = Object.entries(sp).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const mx = top[0]?.[1] || 1;
+  $('#sponsors').innerHTML = top.length ? top.map(([n, v], i) => `<div class="rank-row"><span class="n">${i + 1}</span><span class="trunc">${esc(n)}</span>${money(v)}<span class="bar-bg"><i style="width:${v / mx * 100}%"></i></span></div>`).join('') : '<div class="empty">No bank deposits yet.</div>';
+}
+
+function waterfall(c) {
+  const steps = [
+    {l:'Before tax', from:0, to:c.bankIn, col:'var(--fg)'},
+    {l:`Tax ${S.settings.taxRate}%`, from:c.bankIn, to:c.bankIn - c.tax, col:'var(--red-deep)'},
+    {l:'After tax', from:0, to:c.bankNet, col:'var(--fg)'},
+    {l:'Bank out', from:c.bankNet, to:c.bankBal, col:'var(--red)'},
+    {l:'After cash out', from:0, to:c.bankBal, col: c.bankBal < 0 ? 'var(--bad)' : 'var(--good)'}
+  ];
+  const W = 620, H = 250, top = 28, bot = 40, left = 8;
+  const max = Math.max(1, ...steps.map(s => Math.max(s.from, s.to))), min = Math.min(0, ...steps.map(s => Math.min(s.from, s.to)));
+  const y = v => top + (max - v) / (max - min) * (H - top - bot);
+  const bw = (W - left * 2) / steps.length;
+  let g = `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--rule)"/>`;
+  steps.forEach((s, i) => {
+    const x = left + i * bw + bw * .18, w = bw * .64, y1 = y(Math.max(s.from, s.to)), y2 = y(Math.min(s.from, s.to));
+    g += `<rect x="${x}" y="${y1}" width="${w}" height="${Math.max(2, y2 - y1)}" rx="3" fill="${s.col}"/>`;
+    const delta = s.to - s.from, label = (i === 1 || i === 3) ? '−' + compact(Math.abs(delta)) : compact(s.to);
+    g += `<text class="v" x="${x + w / 2}" y="${y1 - 8}" text-anchor="middle">${label}</text>`;
+    g += `<text x="${x + w / 2}" y="${H - 14}" text-anchor="middle">${s.l}</text>`;
+    if (i < steps.length - 1) { const nx = left + (i + 1) * bw + bw * .18; g += `<line x1="${x + w}" x2="${nx}" y1="${y(s.to)}" y2="${y(s.to)}" stroke="var(--dim)" stroke-dasharray="3 3"/>`; }
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bank waterfall">${g}</svg>`;
+}
+
+function filtered() {
+  const f = S.f, q = f.q.trim().toLowerCase();
+  let rows = [...S.entries.entries()].filter(([, e]) => {
+    if (f.kind === 'planned') { if (e.status !== 'planned') return false; }
+    else if (f.kind === 'cash' || f.kind === 'bank') { if (!e.kind.startsWith(f.kind)) return false; }
+    else if (f.kind !== 'all' && e.kind !== f.kind) return false;
+    if (f.member && e.member !== f.member) return false;
+    if (f.phase && (e.phase || 'General') !== f.phase) return false;
+    if (f.fatora === 'none' ? (e.kind !== 'cashOut' || e.fatora) : f.fatora && e.fatora !== f.fatora) return false;
+    if (q && !`${e.desc} ${e.counterparty} ${e.member} ${e.note} ${e.phase} ${e.amount}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const k = f.sort, d = f.dir;
+  const kindOrder = {cashIn:0, cashOut:1, bankIn:2, bankOut:3};
+  rows.sort((a, b) => {
+    const A = a[1], B = b[1];
+    let r;
+    if (k === 'amount') r = (+A.amount||0) - (+B.amount||0);
+    else if (k === 'order') r = (kindOrder[A.kind] - kindOrder[B.kind]) || ((+A.order||0) - (+B.order||0));
+    else if (k === 'kind') r = kindOrder[A.kind] - kindOrder[B.kind];
+    else r = String(k === 'member' ? (A.member || A.counterparty) : A[k] || '').localeCompare(String(k === 'member' ? (B.member || B.counterparty) : B[k] || ''));
+    return r * d;
+  });
+  return rows;
+}
+
+function renderLedger() {
+  const rows = filtered();
+  $$('#kindSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === S.f.kind));
+  $$('thead th[data-s]').forEach(th => { th.textContent = th.textContent.replace(/ [▲▼]$/, ''); if (th.dataset.s === S.f.sort) th.textContent += S.f.dir > 0 ? ' ▲' : ' ▼'; });
+  const kindIdx = {}; let net = 0, gross = 0;
+  $('#ledgerBody').innerHTML = rows.length ? rows.map(([id, e]) => {
+    kindIdx[e.kind] = (kindIdx[e.kind] || 0) + 1;
+    const inflow = e.kind === 'cashIn' || e.kind === 'bankIn';
+    if (e.status !== 'planned') { net += (inflow ? 1 : -1) * (+e.amount||0); gross += +e.amount||0; }
+    const who = e.kind.startsWith('cash') ? e.member : e.counterparty;
+    return `<tr data-id="${esc(id)}" class="${e.status === 'planned' ? 'row-planned' : ''}">
+      <td class="num muted">${kindIdx[e.kind]}</td>
+      <td><span class="pill k-${e.kind}">${KIND[e.kind]}</span>${e.status === 'planned' ? ' <span class="pill planned">planned</span>' : ''}${e.paidFrom === 'pocket' ? ` <span class="pill ${e.reimbursed ? 'f-Yes' : 'planned'}">${e.reimbursed ? 'reimbursed' : 'own pocket'}</span>` : ''}${e.kind !== 'cashOut' && (e.kind === 'cashIn' || e.kind === 'bankIn') && !e.transferId ? ` <span class="pill f-">${catOf(e) === 'sponsor' ? 'sponsor' : catOf(e) === 'opening' ? 'opening' : 'other'}</span>` : ''}${e.transferId ? ' <span class="pill f-" title="Bank ⇄ cash transfer">⇄</span>' : ''}</td>
+      <td>${esc(e.desc) || '<span class="muted">—</span>'}${e.note ? `<div class="muted" style="font-size:12px">${esc(e.note)}</div>` : ''}</td>
+      <td class="r">${+e.amount ? money(+e.amount, inflow ? 'amt-in' : 'amt-out') : '<span class="muted">—</span>'}${vatOf(e) ? `<div class="muted num" style="font-size:12px">net ${fmt(e.amount - vatOf(e))}</div>` : ''}</td>
+      <td>${esc(who) || '<span class="muted">—</span>'}</td>
+      <td>${esc(e.phase || 'General')}</td>
+      <td>${e.kind === 'cashOut' ? `<span class="pill f-${esc(e.fatora || '')}">${esc(e.fatora || 'not set')}</span>` : ''}</td>
+      <td>${e.receiptId ? '<span title="Receipt attached">📎</span>' : ''}</td></tr>`;
+  }).join('') : `<tr><td colspan="8" class="empty">${S.loaded ? 'No entries match these filters.' : 'Loading the cashbook… Entries appear here once the shared ledger connects. Use <b>New entry</b> to add one.'}</td></tr>`;
+  $('#ledgerFoot').innerHTML = rows.length ? `<tr><td colspan="3">${rows.length} entries${['all', 'planned', 'cash', 'bank'].includes(S.f.kind) ? ' · net (in − out' + (S.f.kind === 'bank' ? ', before tax' : '') + ')' : ''}</td><td class="r">${money(['all', 'planned', 'cash', 'bank'].includes(S.f.kind) ? net : gross)}</td><td colspan="4"></td></tr>` : '';
+}
+
+function renderTeam(c) {
+  const ms = Object.values(c.members), cur = c.curator;
+  $('#curatorCard').innerHTML = `<div class="cur-l"><div class="av-big">★</div><div><span class="lbl">Curator · holds all team cash</span><h2>${esc(cur || 'No curator set')}</h2></div></div>
+    <div class="cur-n"><div><span class="lbl">In the box now</span><b class="num">${fmt(c.box)}</b></div><div><span class="lbl">Owed to members</span><b class="num ${c.owed ? 'neg' : ''}">${fmt(c.owed)}</b></div><div><span class="lbl">Cash in hand (net)</span><b class="num">${fmt(c.cashBal)}</b></div></div>`;
+  $('#members').innerHTML = ms.map(m => {
+    const cov = m.spent ? m.fYes / m.spent : 1, role = (S.settings.roles || {})[m.name], isCur = m.name === cur;
+    return `<div class="member" ${isCur ? 'style="border-color:var(--red)"' : ''}>
+      <div style="display:flex;gap:12px;align-items:center"><div class="av">${isCur ? '★' : esc(m.name.slice(0, 2).toUpperCase())}</div><div><h3>${esc(m.name)}</h3><span class="lbl">${isCur ? 'Curator · ' : ''}${role ? esc(role) + ' · ' : ''}${m.count} cash-outs</span></div></div>
+      <div><span class="lbl">Brought in</span><div class="hold num">${fmt(m.collected)} <span style="font-size:14px">EGP</span></div><span class="muted" style="font-size:12px">${isCur ? 'Kept in their box' : m.collected ? 'Handed to the curator' : ''}</span></div>
+      <div class="mini"><div><span class="muted">Spent</span>${money(m.spent)}</div><div><span class="muted">Own pocket, to reimburse</span>${money(m.owed, m.owed ? 'neg' : '')}</div><div><span class="muted">Without fatora</span>${money(m.missAmt, m.missAmt ? 'neg' : '')}</div></div>
+      <div><div class="lbl" style="margin-bottom:6px">Fatora coverage ${Math.round(cov * 100)}%</div><div class="meter"><i style="width:${cov * 100}%;background:${cov > .8 ? 'var(--good)' : cov > .5 ? 'var(--warn)' : 'var(--bad)'}"></i></div></div>
+      <button class="btn sm ghost" data-member="${esc(m.name)}">See their entries →</button>
+    </div>`;
+  }).join('');
+  $('#handover').innerHTML = c.pocketOpen.length ? c.pocketOpen.map(([id, e]) => `<div class="ho"><b>${esc(cur || 'Curator')}</b><span class="arrow">→</span><b>${esc(e.member || 'Someone')}</b><span class="muted trunc" style="min-width:0;flex:1">${esc(e.desc)}</span>${money(e.amount)}<button class="btn sm" data-reimb="${esc(id)}" ${S.canWrite ? '' : 'disabled'}>Mark reimbursed</button></div>`).join('')
+    : '<div class="muted">Nothing to reimburse. When someone pays from their own pocket, set <b>Paid from: Own pocket</b> on the cash-out and it shows up here.</div>';
+}
+
+function renderSponsors(c) {
+  const ys = Object.keys(c.years).map(Number).sort((a, b) => b - a);
+  if (!ys.includes(S.year)) S.year = ys.includes(S.season) ? S.season : ys.includes(curYear()) ? curYear() : ys[0];
+  $('#yearSeg').innerHTML = ys.map(y => `<button type="button" data-y="${y}" aria-pressed="${y === S.year}">${y}</button>`).join('');
+  const Y = c.years[S.year];
+  const sp = [...Y.sponsors.values()].sort((a, b) => b.gross - a.gross || b.inKind - a.inKind || a.name.localeCompare(b.name));
+  const paid = sp.filter(s => s.payments).length, ik = sp.filter(s => s.type === 'in-kind' || s.type === 'both').length, pl = sp.filter(s => s.type === 'pledged').length;
+  $('#incKpis').innerHTML = `
+    <div class="kpi"><span class="lbl">Income ${S.year} · gross</span><b class="num">${fmt(Y.gross)}</b><span class="muted" style="font-size:12px">Sponsors + other income, before VAT</span></div>
+    <div class="kpi"><span class="lbl">VAT removed (${S.settings.taxRate}%)</span><b class="num neg">${fmt(Y.vat)}</b><span class="muted" style="font-size:12px">On bank deposits</span></div>
+    <div class="kpi hot"><span class="lbl">Net income ${S.year}</span><b class="num">${fmt(Y.net)}</b><span class="muted" style="font-size:12px">What the team actually keeps</span></div>
+    <div class="kpi"><span class="lbl">Sponsors ${S.year}</span><b class="num">${sp.length}</b><span class="muted" style="font-size:12px">${paid} paid · ${ik} in-kind${pl ? ` · ${pl} pledged` : ''}</span></div>`;
+  // year chart
+  const asc = [...ys].reverse(), W = 560, H = 230, top = 34, bot = 44;
+  const mx = Math.max(1, ...asc.map(y => c.years[y].net));
+  const bw = Math.min(110, (W - 20) / asc.length);
+  const x0 = (W - bw * asc.length) / 2;
+  let g = `<line x1="0" x2="${W}" y1="${H - bot}" y2="${H - bot}" stroke="var(--rule)"/>`;
+  asc.forEach((y, i) => {
+    const d = c.years[y], h = (H - top - bot) * d.net / mx, x = x0 + i * bw + bw * .2, w = bw * .6;
+    g += `<rect x="${x}" y="${H - bot - h}" width="${w}" height="${Math.max(2, h)}" rx="3" fill="${y === S.year ? 'var(--red)' : 'var(--dim)'}"/>`;
+    g += `<text class="v" x="${x + w / 2}" y="${H - bot - h - 18}" text-anchor="middle">${compact(d.net)}</text>`;
+    g += `<text x="${x + w / 2}" y="${H - bot - h - 5}" text-anchor="middle">${d.sponsors.size} sponsors</text>`;
+    g += `<text x="${x + w / 2}" y="${H - 18}" text-anchor="middle" class="${y === S.year ? 'v' : ''}">${y}</text>`;
+  });
+  $('#yearChart').innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Net income by year">${g}</svg>` + (asc.length < 2 ? '<div class="muted" style="font-size:13px;margin-top:8px">Next season’s entries (set the year to the new season) will appear here as a second bar for comparison.</div>' : '');
+  const src = [['Sponsorship via bank (after VAT)', Y.spBank], ['Sponsorship in cash', Y.spCash], ['Other income (tickets, merch…)', Y.other], ['In-kind sponsorship (estimated, not cash)', Y.inKind]];
+  const smx = Math.max(1, ...src.map(s => s[1]));
+  $('#incSrcCap').textContent = `${S.year}`;
+  $('#incSrc').innerHTML = src.map(([l, v], i) => `<div class="rank-row"><span class="n">${i + 1}</span><span class="trunc">${l}</span>${money(v)}<span class="bar-bg"><i style="width:${v / smx * 100}%;${i === 3 ? 'background:var(--warn)' : ''}"></i></span></div>`).join('');
+  $('#spCap').textContent = `${sp.length} sponsors in ${S.year} · click one to add notes or an in-kind value`;
+  const TP = {money: 'Paid', 'in-kind': 'In-kind', both: 'Paid + in-kind', pledged: 'Pledged'};
+  $('#spBody').innerHTML = sp.length ? sp.map(s => `<tr data-key="${esc(s.key)}">
+    <td><b>${esc(s.name)}</b></td><td><span class="pill tp-${s.type}">${TP[s.type]}</span></td>
+    <td class="r">${s.gross ? money(s.gross) : '<span class="muted">—</span>'}</td><td class="r">${s.vat ? money(s.vat, 'neg') : '<span class="muted">—</span>'}</td><td class="r">${s.net ? money(s.net) : '<span class="muted">—</span>'}</td>
+    <td class="r">${s.inKind ? money(s.inKind) : '<span class="muted">—</span>'}</td><td class="r num">${s.payments || '—'}</td><td class="muted" style="font-size:13px">${esc(s.notes)}</td></tr>`).join('')
+    : `<tr><td colspan="8" class="empty">No sponsors for ${S.year} yet. Bank in entries marked as sponsorship appear here, and you can add sponsors who gave no money with <b>Add sponsor</b>.</td></tr>`;
+}
+
+function renderPhases(c) {
+  const list = S.settings.phases.map(n => c.phases[n]).concat(Object.values(c.phases).filter(p => !S.settings.phases.includes(p.name)));
+  $('#phases').innerHTML = list.map((p, i) => {
+    const b = +S.settings.budgets?.[p.name] || 0;
+    const pct = b ? p.total / b : 0;
+    const st = !b ? ['none', 'No budget'] : pct > 1 ? ['over', `Over by ${compact(p.total - b)}`] : pct > .85 ? ['near', `${Math.round(pct * 100)}% used`] : ['ok', `${Math.round(pct * 100)}% used`];
+    const top = [...p.items].sort((a, b) => b.amount - a.amount).slice(0, 5);
+    return `<div class="phase">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="display:flex;gap:8px;align-items:center"><i style="width:10px;height:10px;border-radius:2px;background:${PHASE_COLORS[i % 8]}"></i>${esc(p.name)}</h3><span class="state ${st[0]}">${st[1]}</span></div>
+      <div class="tot num">${fmt(p.total)} <span style="font-size:13px" class="muted">EGP spent</span></div>
+      ${b ? `<div class="meter"><i style="width:${Math.min(100, pct * 100)}%;background:${pct > 1 ? 'var(--bad)' : pct > .85 ? 'var(--warn)' : 'var(--good)'}"></i></div>` : ''}
+      <div class="mini"><div><span class="muted">From cash</span>${money(p.cash)}</div><div><span class="muted">From bank</span>${money(p.bank)}</div>${p.planned ? `<div><span class="muted">Planned, unpaid</span>${money(p.planned)}</div>` : ''}${b ? `<div><span class="muted">Left in budget</span>${money(b - p.total - p.planned, b - p.total - p.planned < 0 ? 'neg' : 'pos')}</div>` : ''}</div>
+      <div class="budget-row"><label class="lbl" for="bud-${i}">Budget</label><input class="inp num" id="bud-${i}" data-phase="${esc(p.name)}" inputmode="numeric" value="${b || ''}" placeholder="EGP"></div>
+      ${top.length ? `<div><div class="lbl" style="margin-bottom:6px">Biggest items</div><div class="mini">${top.map(e => `<div><span class="trunc">${esc(e.desc)}</span>${money(e.amount)}</div>`).join('')}</div></div>` : ''}
+      <button class="btn sm ghost" data-phase-go="${esc(p.name)}">Open in ledger →</button>
+    </div>`;
+  }).join('');
+}
+
+function renderFatora(c) {
+  const cov = c.outTotal ? c.fYesAmt / c.outTotal : 0;
+  const R = 54, C = 2 * Math.PI * R;
+  $('#ring').innerHTML = `<svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Fatora coverage"><circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--stage-2)" stroke-width="14"/><circle cx="70" cy="70" r="${R}" fill="none" stroke="${cov > .8 ? 'var(--good)' : cov > .5 ? 'var(--warn)' : 'var(--red)'}" stroke-width="14" stroke-dasharray="${C * cov} ${C}" transform="rotate(-90 70 70)" stroke-linecap="round"/><text x="70" y="76" text-anchor="middle" class="v" style="font-size:24px;font-family:var(--display);font-weight:800">${Math.round(cov * 100)}%</text></svg>
+    <div class="mini" style="min-width:180px;flex:1"><div><span class="muted">With fatora</span>${money(c.fYesAmt)}</div><div><span class="muted">Without</span>${money(c.outTotal - c.fYesAmt, 'neg')}</div><div><span class="muted">Entries missing</span><span class="num">${c.missing.length}</span></div></div>`;
+  const ms = Object.values(c.members).filter(m => m.spent).sort((a, b) => b.missAmt - a.missAmt);
+  const mx = Math.max(1, ...ms.map(m => m.missAmt));
+  $('#fatoraMembers').innerHTML = ms.map((m, i) => `<div class="rank-row"><span class="n">${i + 1}</span><span class="trunc">${esc(m.name)} <span class="muted">· ${Math.round(m.spent ? m.fYes / m.spent * 100 : 0)}% covered</span></span>${money(m.missAmt)}<span class="bar-bg"><i style="width:${m.missAmt / mx * 100}%"></i></span></div>`).join('');
+  $('#chaseCap').textContent = `${c.missing.length} cash-outs, largest first`;
+  const canUp = !!S.assets && S.canWrite;
+  $('#missing').innerHTML = c.missing.length ? c.missing.map(([id, e]) => `<div class="miss" data-id="${esc(id)}">
+      <div class="d"><div class="trunc"><b>${esc(e.desc)}</b></div><div class="muted" style="font-size:12px">${esc(e.member || 'No one assigned')} · ${esc(e.phase || 'General')} · <span class="pill f-${esc(e.fatora || '')}">${esc(e.fatora || 'not set')}</span></div></div>
+      ${money(e.amount)}
+      <div style="display:flex;gap:6px">${canUp ? `<label class="btn sm" style="cursor:pointer">Attach<input type="file" accept="image/*,application/pdf" data-up="${esc(id)}" hidden></label>` : ''}<button class="btn sm" data-yes="${esc(id)}" ${S.canWrite ? '' : 'disabled'}>Got it ✓</button></div>
+    </div>`).join('') : '<div class="empty">Every cash-out has a fatora. 🎉</div>';
+  const withR = [...S.entries.entries()].filter(([, e]) => e.receiptId);
+  $('#receipts').innerHTML = withR.length ? withR.map(([id, e]) => {
+    return `<a class="rcpt" href="#" data-rid="${esc(e.receiptId)}" target="_blank" rel="noopener">${e.receiptType === 'application/pdf' ? '<div class="pdf">PDF</div>' : `<img data-rid-img="${esc(e.receiptId)}" alt="Receipt for ${esc(e.desc)}" loading="lazy">`}<span class="trunc">${esc(e.desc)} · ${fmt(e.amount)}</span></a>`;
+  }).join('') : `<div class="muted">${S.assets ? 'No receipts yet. Use Attach on the chase list or the entry editor to add a photo of a fatora.' : 'Receipt uploads are available to editors of this page.'}</div>`;
+  const badge = $('#fatoraBadge'); badge.hidden = !c.missing.length; badge.textContent = c.missing.length;
+  window.hydrateReceipts?.($('#receipts'));
+}
+
+async function renderActivity() {
+  const ids = [...new Set(S.activity.map(a => a.actor).filter(Boolean))];
+  if (S.user && ids.length) { try { const p = await S.user.profiles(ids); ids.forEach(id => S.names[id] = p[id]?.name || ''); } catch {} }
+  $('#feed').innerHTML = S.activity.length ? S.activity.map(a => `<div class="ev">
+      <span class="who">${esc(S.names[a.actor] || 'Someone')}</span>
+      <span><span class="act-${esc(a.action)}">${esc(a.action)}</span> ${esc(KIND[a.kind] || a.kind || '')} · ${esc(a.desc || '')} ${a.amount ? `· <span class="num">EGP ${fmt(a.amount)}</span>` : ''}</span>
+      <time datetime="${esc(a.at)}">${ago(a.at)}</time></div>`).join('') : '<div class="empty">Changes made on this page show up here, with who made them.</div>';
+}
+function ago(iso) { const s = (Date.now() - new Date(iso)) / 1000; if (!isFinite(s)) return ''; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return new Date(iso).toLocaleDateString('en-GB', {day:'numeric', month:'short'}); }
+
+function fillSelects() {
+  const m = S.settings.members, p = S.settings.phases;
+  const keep = (sel, html) => { const v = sel.value; sel.innerHTML = html; sel.value = v; };
+  keep($('#fMember'), `<option value="">Any member</option>` + m.map(x => `<option>${esc(x)}</option>`).join(''));
+  keep($('#fPhase'), `<option value="">Any phase</option>` + p.map(x => `<option>${esc(x)}</option>`).join(''));
+  keep($('#dMember'), `<option value="">—</option>` + m.map(x => `<option>${esc(x)}</option>`).join(''));
+  keep($('#dPhase'), p.map(x => `<option>${esc(x)}</option>`).join(''));
+  const spNames = new Set([...S.allEntries.values()].filter(e => isIncome(e) && catOf(e) === 'sponsor').map(sponsorOf));
+  S.sponsors.forEach(r => r?.name && spNames.add(r.name));
+  $('#sponsorList').innerHTML = [...spNames].sort().map(x => `<option value="${esc(x)}">`).join('');
+  const parties = [...new Set([...S.entries.values()].map(e => e.counterparty).filter(Boolean))];
+  $('#partyList').innerHTML = parties.map(x => `<option value="${esc(x)}">`).join('');
+}
+
+let rq = 0;
+function render() {
+  cancelAnimationFrame(rq);
+  rq = requestAnimationFrame(() => {
+    const c = calc();
+    fillSelects();
+    const seasons = [...new Set([curYear(), S.season, ...[...S.allEntries.values()].map(yearOf)])].filter(Boolean).sort((a, b) => b - a);
+    $('#seasonSel').innerHTML = seasons.map(y => `<option value="${y}">${y}${y < curYear() ? ' · closed' : y === curYear() ? ' · current' : ''}</option>`).join('');
+    $('#seasonSel').value = String(S.season);
+    const sb = $('#seasonBanner');
+    sb.hidden = !(S.season && S.season < curYear());
+    if (!sb.hidden) sb.textContent = `Season ${S.season} is closed. You're looking at its archive; its closing balances were carried into ${S.season + 1}. Corrections are still possible.`;
+    renderOverview(c); renderLedger(); renderTeam(c); renderPhases(c); renderFatora(c); renderSponsors(c);
+    if (!$('#people').hidden) renderPeople();
+    if (S.tab === 'activity') renderActivity();
+    $('#addBtn').disabled = !S.canWrite || !S.db;
+  });
+}
+
+function setTab(t) {
+  if (!document.getElementById('tab-' + t)) t = 'overview';
+  S.tab = t;
+  $$('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  $$('section.tab').forEach(s => s.hidden = s.id !== 'tab-' + t);
+  if (t === 'activity') renderActivity();
+  try { history.replaceState(null, '', '#' + t); } catch {}
+  try { localStorage.setItem('tedx-tab', t); } catch {}
+}
+
+/* ---------- writes ---------- */
+function toast(msg, undo) {
+  const t = $('#toast'); $('#toastMsg').textContent = msg; const b = $('#toastAct');
+  b.hidden = !undo; b.onclick = async () => { t.hidden = true; await undo(); };
+  t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, undo ? 7000 : 3000);
+}
+function writeErr(e) {
+  if (e?.code === 'invalid_argument') { S.canWrite = false; render(); toast('You can view this cashbook but not change it. Ask the owner for edit access.'); }
+  else if (e?.code === 'quota_exceeded') toast('The cashbook is full. Delete old entries to add more.');
+  else toast('Could not save. Check your connection and try again.');
+  console.error(e);
+}
+async function log(action, e, id) {
+  try { await S.db.collection('activity').add({at: new Date().toISOString(), actor: S.meId || '', action, kind: e.kind || '', desc: e.desc || e.counterparty || '', amount: +e.amount || 0, entryId: id || ''}); } catch {}
+}
+async function putEntry(id, data, action) {
+  data.updatedAt = new Date().toISOString(); data.updatedBy = S.meId || '';
+  await S.db.collection('entries').doc(id).set(data);
+  log(action, data, id);
+}
+async function deleteEntry(id) {
+  const e = S.entries.get(id); if (!e) return;
+  const pair = e.transferId ? [...S.entries.entries()].filter(([k, x]) => x.transferId === e.transferId && k !== id) : [];
+  try {
+    await S.db.collection('entries').doc(id).delete();
+    for (const [k] of pair) await S.db.collection('entries').doc(k).delete();
+    log('deleted', e, id);
+    toast(`Deleted ${e.desc || 'entry'}`, async () => {
+      try { await S.db.collection('entries').doc(id).set(e); for (const [k, x] of pair) await S.db.collection('entries').doc(k).set(x); log('restored', e, id); toast('Restored'); } catch (er) { writeErr(er); }
+    });
+  } catch (er) { writeErr(er); }
+}
+function nextOrder(kind) { return Math.max(0, ...[...S.entries.values()].filter(e => e.kind === kind).map(e => +e.order || 0)) + 1; }
+
+/* ---------- drawer ---------- */
+function openDrawer(id, preset = {}) {
+  if (!S.db) { toast('Sign in to edit the cashbook.'); return; }
+  S.editing = id || null;
+  const e = id ? S.entries.get(id) : {kind: preset.kind || (S.f.kind in KIND ? S.f.kind : 'cashOut'), status: 'done', phase: preset.phase || S.settings.phases.at(-2) || 'General', date: new Date().toISOString().slice(0, 10), member: preset.member || '', ...preset};
+  S.dKind = e.kind;
+  $('#dTitle').textContent = id ? 'Edit entry' : 'New entry';
+  $('#dAmount').value = +e.amount ? e.amount : '';
+  $('#dDesc').value = e.desc || ''; $('#dParty').value = e.counterparty || '';
+  $('#dMember').value = e.member || ''; $('#dPhase').value = e.phase || 'General';
+  $('#dFatora').value = e.fatora || ''; $('#dStatus').value = e.status || 'done';
+  $('#dDate').value = e.date || ''; $('#dNote').value = e.note || ''; $('#dTaxable').checked = e.taxable !== false;
+  $('#dCat').value = catOf(e); $('#dSponsor').value = e.sponsor || ''; $('#dPaid').value = e.paidFrom || 'box'; $('#dReimb').checked = !!e.reimbursed;
+  $('#dYear').value = e.year || S.season || curYear();
+  $('#dFile').value = '';
+  $('#dReceiptView').innerHTML = e.receiptId ? `<a href="#" data-rid="${esc(e.receiptId)}" target="_blank" rel="noopener" style="color:var(--fg)">View attached receipt ↗</a>` : 'No receipt attached.';
+  $('#dMeta').textContent = id ? `${e.source ? 'Imported from ' + e.source + ' · ' : ''}${e.updatedAt ? 'Last changed ' + ago(e.updatedAt) : ''}` : '';
+  $('#dDelete').hidden = !id;
+  $('#dKind [data-k="transfer"]').hidden = !!id;
+  syncKind();
+  window.hydrateReceipts?.($('#dReceiptView'));
+  $('#scrim').hidden = $('#drawer').hidden = false;
+  setTimeout(() => $('#dAmount').focus(), 30);
+}
+function updVat() {
+  const a = parseFloat(String($('#dAmount').value).replace(/[, ]/g, '')) || 0;
+  const old = S.editing ? S.entries.get(S.editing) : null;
+  const r = $('#dTaxable').checked ? (old?.vatRate != null ? +old.vatRate : +S.settings.taxRate || 0) : 0;
+  $('#vatLine').hidden = S.dKind !== 'bankIn';
+  $('#vatLine').innerHTML = `<span>Gross<b class="num">${fmt(a)}</b></span><span>VAT ${r}%<b class="num neg">−${fmt(a * r / 100)}</b></span><span>Net to bank<b class="num pos">${fmt(a - a * r / 100)}</b></span>`;
+}
+function closeDrawer() { $('#scrim').hidden = $('#drawer').hidden = true; S.editing = null; }
+function syncKind() {
+  const k = S.dKind, cash = k === 'cashIn' || k === 'cashOut', tr = k === 'transfer';
+  $$('#dKind button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  $('#fxDir').hidden = !tr;
+  $('#fParty').hidden = cash || tr;
+  $('#dPartyL').textContent = k === 'bankIn' ? 'From (sponsor / source)' : 'To (vendor / payee)';
+  $('#fMemberF').hidden = !(cash || tr);
+  $('#dMemberL').textContent = k === 'cashIn' ? 'With (who holds it)' : k === 'cashOut' ? 'By (who paid)' : 'Member handling the cash';
+  $('#fFat').hidden = k !== 'cashOut';
+  $('#fTax').hidden = k !== 'bankIn';
+  const inc = k === 'cashIn' || k === 'bankIn';
+  $('#fCatRow').hidden = !inc; $('#fSponsor').hidden = !inc || $('#dCat').value !== 'sponsor';
+  $('#dSponsor').placeholder = k === 'bankIn' ? 'Same as From if left empty' : 'Sponsor name';
+  $('#fPaidRow').hidden = k !== 'cashOut'; $('#fReimb').hidden = $('#dPaid').value !== 'pocket';
+  const cur = curatorName();
+  $('#custodyHint').textContent = k === 'cashIn' ? (cur ? `The cash goes to the curator's box (${cur}).` : 'Set a curator in Manage stakeholders.') : k === 'transfer' ? 'Who carried the cash to or from the bank.' : '';
+  $('#dMemberL').textContent = k === 'cashIn' ? 'Collected by' : k === 'cashOut' ? 'By (who paid)' : 'Member handling the cash';
+  $('#dAmountL').textContent = k === 'bankIn' ? 'Amount deposited, before VAT (EGP)' : 'Amount (EGP)';
+  updVat();
+  $('#fPhaseF').hidden = tr;
+  $('#fStatus').hidden = tr;
+  $('#fDesc').hidden = false;
+  $('#fReceipt').hidden = !S.assets || tr;
+}
+async function saveDrawer() {
+  const amount = parseFloat(String($('#dAmount').value).replace(/[, ]/g, '')) || 0;
+  const k = S.dKind;
+  if (k === 'transfer') {
+    if (!amount) { toast('Enter the amount moved.'); return; }
+    const tid = 't' + Date.now().toString(36), b2c = $('#dDir').value === 'b2c', m = $('#dMember').value, today = $('#dDate').value, note = $('#dNote').value.trim();
+    const label = $('#dDesc').value.trim() || (b2c ? 'Bank withdrawal to cash' : 'Cash deposited to bank');
+    const base = {amount, desc: label, status: 'done', phase: 'General', date: today, note, year: parseInt($('#dYear').value, 10) || S.season || curYear(), category: 'transfer', transferId: tid, createdAt: new Date().toISOString(), createdBy: S.meId || '', fatora: '', receiptId: ''};
+    const a = {...base, kind: b2c ? 'bankOut' : 'cashOut', member: b2c ? '' : m, counterparty: b2c ? 'Cash box' : '', fatora: b2c ? '' : 'Yes', order: nextOrder(b2c ? 'bankOut' : 'cashOut')};
+    const b = {...base, kind: b2c ? 'cashIn' : 'bankIn', member: b2c ? m : '', counterparty: b2c ? '' : 'Cash box', taxable: false, order: nextOrder(b2c ? 'cashIn' : 'bankIn')};
+    try { $('#dSave').disabled = true; await putEntry(S.db.collection('entries').doc().id, a, 'added'); await putEntry(S.db.collection('entries').doc().id, b, 'added'); closeDrawer(); toast('Transfer recorded on both sides'); }
+    catch (e) { writeErr(e); } finally { $('#dSave').disabled = false; }
+    return;
+  }
+  const status = $('#dStatus').value;
+  if (!amount && status !== 'planned') { toast('Enter an amount, or set the status to Planned.'); $('#dAmount').focus(); return; }
+  const desc = $('#dDesc').value.trim(), party = $('#dParty').value.trim();
+  if (!desc && !party) { toast('Add a description so the team knows what this is.'); $('#dDesc').focus(); return; }
+  const old = S.editing ? S.entries.get(S.editing) : null;
+  const data = {...(old || {createdAt: new Date().toISOString(), createdBy: S.meId || '', receiptId: '', order: nextOrder(k)}),
+    kind: k, amount, desc: desc || party, counterparty: k.startsWith('bank') ? (party || desc) : '', member: k.startsWith('cash') ? $('#dMember').value : '',
+    phase: $('#dPhase').value || 'General', fatora: k === 'cashOut' ? $('#dFatora').value : '', status, date: $('#dDate').value, note: $('#dNote').value.trim()};
+  if (old && old.kind !== k) data.order = nextOrder(k);
+  if (k === 'bankIn') { data.taxable = $('#dTaxable').checked; if (data.vatRate == null) data.vatRate = +S.settings.taxRate || 0; } else { delete data.taxable; delete data.vatRate; }
+  if (k === 'cashIn' || k === 'bankIn') { data.category = $('#dCat').value; data.sponsor = data.category === 'sponsor' ? ($('#dSponsor').value.trim() || party || desc) : ''; } else { delete data.category; delete data.sponsor; }
+  if (k === 'cashOut') { data.paidFrom = $('#dPaid').value; data.reimbursed = data.paidFrom === 'pocket' && $('#dReimb').checked; } else { delete data.paidFrom; delete data.reimbursed; }
+  data.year = parseInt($('#dYear').value, 10) || S.season || curYear();
+  const id = S.editing || S.db.collection('entries').doc().id;
+  try {
+    $('#dSave').disabled = true;
+    const file = $('#dFile').files[0];
+    if (file && S.assets) {
+      const up = await S.assets.upload(file);
+      data.receiptId = up.id; data.receiptType = up.contentType;
+      if (k === 'cashOut' && !data.fatora) data.fatora = 'Yes';
+    }
+    await putEntry(id, data, old ? 'edited' : 'added');
+    closeDrawer(); toast(old ? 'Saved' : `Added ${data.desc}`);
+  } catch (e) { if (e?.code && !['invalid_argument', 'quota_exceeded', 'unavailable'].includes(e.code)) toast('Upload failed: ' + (e.message || e.code)); else writeErr(e); }
+  finally { $('#dSave').disabled = false; }
+}
+
+/* ---------- confirm + settings ---------- */
+function confirmBox(title, body, yes, onYes) {
+  $('#mTitle').textContent = title; $('#mBody').textContent = body; $('#mYes').textContent = yes;
+  $('#mScrim').hidden = $('#modal').hidden = false;
+  $('#mYes').onclick = () => { $('#mScrim').hidden = $('#modal').hidden = true; onYes(); };
+  $('#mYes').focus();
+}
+$('#mNo').onclick = () => $('#mScrim').hidden = $('#modal').hidden = true;
+
+$('#settingsBtn').onclick = () => {
+  $('#sTax').value = S.settings.taxRate; $('#sPhases').value = S.settings.phases.join(', ');
+  $('#mScrim').hidden = $('#settings').hidden = false;
+};
+$('#sCancel').onclick = () => $('#mScrim').hidden = $('#settings').hidden = true;
+$('#sSave').onclick = async () => {
+  const split = s => [...new Set(s.split(',').map(x => x.trim()).filter(Boolean))];
+  const next = {...S.settings, taxRate: parseFloat($('#sTax').value) || 0, phases: split($('#sPhases').value)};
+  if (!next.phases.length) { toast('Keep at least one phase.'); return; }
+  if (!await saveSettings(next)) return;
+  $('#mScrim').hidden = $('#settings').hidden = true; toast('Settings saved');
+};
+
+/* ---------- export ---------- */
+async function offerFile(filename, data) {
+  if (!S.downloads) { toast('Downloads are not available in this view.'); return; }
+  try { await S.downloads.save({filename, data}); } catch (e) { if (e?.code !== 'declined' && e?.code !== 'cancelled') toast('Download did not start: ' + (e?.message || 'unknown error')); }
+}
+$('#csvBtn').onclick = () => {
+  const rows = filtered();
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = ['Type,Status,Description,Amount,Member,Counterparty,Phase,Fatora,Date,Note'].concat(rows.map(([, e]) => [KIND[e.kind], e.status, e.desc, e.amount, e.member, e.counterparty, e.phase, e.fatora, e.date, e.note].map(q).join(','))).join('\n');
+  offerFile('tedxguc-ledger.csv', '﻿' + csv);
+};
+$('#xlsxBtn').onclick = () => {
+  if (!window.XLSX) { toast('The Excel library did not load. Try again in a moment.'); return; }
+  const by = k => [...S.entries.values()].filter(e => e.kind === k && e.status !== 'planned' || (k === 'cashOut' && e.kind === k)).sort((a, b) => (+a.order||0) - (+b.order||0));
+  const ci = by('cashIn'), co = by('cashOut'), bi = by('bankIn'), bo = by('bankOut');
+  const n = Math.max(ci.length, co.length, bi.length, bo.length, 8) + 1;
+  const aoa = [['Cash In','Description','With','','Cash Out','Description','By','Fatora','','Total','','','Bank In','From','','Bank Out','To','','','Total']];
+  let lastPhase = '';
+  for (let i = 0; i < n - 1; i++) {
+    const r = Array(20).fill(null);
+    if (ci[i]) { r[0] = +ci[i].amount; r[1] = ci[i].desc; r[2] = ci[i].member; }
+    if (co[i]) { if (co[i].phase !== lastPhase) { r[3] = co[i].phase + ':'; lastPhase = co[i].phase; } r[4] = co[i].status === 'planned' ? null : +co[i].amount; r[5] = co[i].desc; r[6] = co[i].member; r[7] = co[i].fatora || null; }
+    if (bi[i]) { r[12] = +bi[i].amount; r[13] = bi[i].counterparty || bi[i].desc; }
+    if (bo[i]) { r[15] = +bo[i].amount; r[16] = bo[i].counterparty || bo[i].desc; }
+    aoa.push(r);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const L = n + 200, rate = (+S.settings.taxRate || 0) / 100;
+  ws['J2'] = {t:'n', f:`SUM(A2:A${L})-SUM(E2:E${L})`};
+  [['S2','Before Tax','T2',`SUM(M2:M${L})`],['S3','Tax','T3',`T2*${rate}`],['S4','Total','T4','T2-T3'],['S5','Cash Out','T5',`SUM(P2:P${L})`],['S7','After Cash Out','T7','T4-T5']]
+    .forEach(([a, l, b, f]) => { ws[a] = {t:'s', v:l}; ws[b] = {t:'n', f}; });
+  ws['!ref'] = `A1:T${Math.max(n, 8)}`;
+  ws['!cols'] = [{wch:10},{wch:26},{wch:9},{wch:10},{wch:10},{wch:28},{wch:9},{wch:7},{wch:2},{wch:12},{wch:2},{wch:2},{wch:10},{wch:22},{wch:2},{wch:10},{wch:26},{wch:2},{wch:14},{wch:12}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  const sum = XLSX.utils.json_to_sheet([...S.entries.values()].map(e => ({Type: KIND[e.kind], Status: e.status, Amount: +e.amount, Description: e.desc, Member: e.member, Counterparty: e.counterparty, Phase: e.phase, Fatora: e.fatora, Date: e.date, Note: e.note})));
+  XLSX.utils.book_append_sheet(wb, sum, 'All entries');
+  const cc = calc(), sps = [];
+  Object.values(cc.years).forEach(y => y.sponsors.forEach(s => sps.push({Year: y.year, Sponsor: s.name, Type: s.type, Gross: Math.round(s.gross), VAT: Math.round(s.vat), Net: Math.round(s.net), 'In-kind / pledged value': s.inKind, Payments: s.payments, Notes: s.notes})));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sps.length ? sps : [{Note: 'No sponsors yet'}]), 'Sponsors');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.values(cc.years).sort((a, b) => a.year - b.year).map(y => ({Year: y.year, 'Gross income': Math.round(y.gross), 'VAT removed': Math.round(y.vat), 'Net income': Math.round(y.net), Sponsors: y.sponsors.size}))), 'Income by year');
+  offerFile(`Tedx${String(S.season).slice(-2)}_Cash.xlsx`, new Uint8Array(XLSX.write(wb, {type:'array', bookType:'xlsx'})));
+};
+
+/* ---------- ask ---------- */
+let askCtl = null;
+async function ask(q) {
+  if (!q.trim()) return;
+  if (!S.sample) { $('#askOut').textContent = 'Ask Claude is not available right now.'; return; }
+  const c = calc();
+  const data = {
+    season: S.season, currency: 'EGP', taxRateOnBankDeposits: S.settings.taxRate + '%',
+    totals: {cashIn: c.cashIn, cashOut: c.cashOut, cashInHand: c.cashBal, bankInBeforeTax: c.bankIn, tax: Math.round(c.tax), bankAfterTax: Math.round(c.bankNet), bankOut: c.bankOut, bankAfterCashOut: Math.round(c.bankBal), totalLiquid: Math.round(c.total), plannedUnpaidSpend: c.plannedOut},
+    custody: {curator: c.curator || 'not set', cashInCuratorBox: c.box, owedToMembersForOwnPocketSpend: c.owed},
+    members: Object.values(c.members).map(m => ({name: m.name, cashCollected: m.collected, cashSpent: m.spent, ownPocketToReimburse: m.owed, spendWithoutFatora: m.missAmt})),
+    incomeByYear: Object.values(c.years).map(y => ({year: y.year, gross: Math.round(y.gross), vat: Math.round(y.vat), net: Math.round(y.net), otherIncome: y.other, sponsors: [...y.sponsors.values()].map(s => ({name: s.name, type: s.type, gross: s.gross, net: Math.round(s.net), inKindValue: s.inKind, notes: s.notes}))})),
+    phases: Object.values(c.phases).map(p => ({name: p.name, cashSpend: p.cash, bankSpend: p.bank, plannedUnpaid: p.planned, budget: +S.settings.budgets?.[p.name] || null})),
+    entries: c.all.map(e => [KIND[e.kind], e.status, +e.amount, e.desc, e.member || e.counterparty, e.phase, e.kind === 'cashOut' ? (e.fatora || 'not set') : ''])
+  };
+  const prompt = `You are the finance assistant for TEDxGUC, a student-run TEDx event at the German University in Cairo. "Fatora" means an official invoice/receipt. Cash in is money a member collected ("With"), but all cash is handed to and held by the curator; cash out is money a member paid ("By"), from the curator's box unless marked own pocket. Bank deposits have VAT removed. Bank deposits are taxed at the stated rate. Entry rows are [type, status, amount, description, member or counterparty, phase, fatora].\n\nLedger data for season ${S.season} (JSON; incomeByYear covers all seasons):\n${JSON.stringify(data)}\n\nQuestion: ${q}\n\nAnswer concisely in plain text with short paragraphs or simple dash lists. Use EGP figures with thousands separators. Base every number on the data; say so if the data can't answer it.`;
+  askCtl?.abort(); askCtl = new AbortController();
+  $('#askOut').textContent = 'Thinking…'; $('#askBtn').disabled = true; $('#askStop').hidden = false;
+  try { const r = await S.sample(prompt, {onText: ({text}) => $('#askOut').textContent = text, signal: askCtl.signal, modelTier: 'default'}); $('#askOut').textContent = r.text; }
+  catch (e) { if (e?.name === 'AbortError' || e?.code === 'aborted') return; $('#askOut').textContent = e?.code === 'not_granted' ? 'Ask Claude is not allowed for this account.' : e?.code === 'rate_limited' ? 'Too many questions right now. Wait a minute and ask again.' : (e?.text || 'Something went wrong. Try again.'); }
+  finally { $('#askBtn').disabled = false; $('#askStop').hidden = true; }
+}
+$('#askBtn').onclick = () => ask($('#askQ').value);
+$('#askStop').onclick = () => { askCtl?.abort(); $('#askStop').hidden = true; $('#askBtn').disabled = false; };
+$('#askChips').onclick = e => { const b = e.target.closest('.chip'); if (b) { $('#askQ').value = b.textContent; ask(b.textContent); } };
+
+/* ---------- stakeholders ---------- */
+const initials = n => n.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+function memberCounts() { const c = {}; for (const e of S.entries.values()) if (e.member) c[e.member] = (c[e.member] || 0) + 1; return c; }
+function renderPeople() {
+  const a = document.activeElement;
+  if ($('#peopleList').contains(a) && a.tagName !== 'BUTTON') return;
+  const counts = memberCounts(), roles = S.settings.roles || {}, ms = S.settings.members, ro = !S.canWrite || !S.db;
+  $('#peopleList').innerHTML = ms.map((m, i) => `<div class="prow">
+    <div class="av">${esc(initials(m))}</div>
+    <input class="inp" data-name="${i}" value="${esc(m)}" aria-label="Name of ${esc(m)}" ${ro ? 'disabled' : ''}>
+    <input class="inp" data-role="${i}" value="${esc(roles[m] || '')}" placeholder="Role, e.g. Treasurer" aria-label="Role of ${esc(m)}" ${ro ? 'disabled' : ''}>
+    <span class="lbl">${counts[m] || 0} entries</span>
+    <button class="btn sm ${m === S.settings.curator ? 'red' : 'ghost'}" type="button" data-cur="${i}" ${ro ? 'disabled' : ''}>${m === S.settings.curator ? '★ Curator' : 'Make curator'}</button>
+    <button class="btn sm ghost" type="button" data-rm="${i}" ${ro ? 'disabled' : ''}>Remove</button>
+    <div class="reassign" id="ra-${i}" hidden>${counts[m] ? `Move ${esc(m)}’s ${counts[m]} entries to <select class="inp" id="raTo-${i}" aria-label="Move entries to">${ms.filter(x => x !== m).map(x => `<option>${esc(x)}</option>`).join('')}<option value="">No one (unassigned)</option></select>` : `Remove ${esc(m)}?`} <button class="btn sm red" type="button" data-rmgo="${i}">Remove ${esc(m)}</button><button class="btn sm ghost" type="button" data-rmno="${i}">Keep</button></div>
+  </div>`).join('');
+  $('#pAdd').disabled = $('#pNew').disabled = $('#pNewRole').disabled = ro;
+}
+async function saveSettings(next) {
+  if (!S.db) { toast('Sign in to change stakeholders.'); return false; }
+  const seasonPart = {}, mainPart = {...S.main};
+  SEASON_KEYS.forEach(k => { if (next[k] !== undefined) seasonPart[k] = next[k]; });
+  Object.keys(next).forEach(k => { if (!SEASON_KEYS.includes(k)) mainPart[k] = next[k]; });
+  try {
+    await S.db.doc('settings/season-' + S.season).set(seasonPart);
+    if (JSON.stringify(mainPart) !== JSON.stringify(S.main)) await S.db.doc('settings/main').set(mainPart);
+    S.seasonDoc = seasonPart; S.main = mainPart; applySettings(); render(); return true;
+  } catch (e) { writeErr(e); return false; }
+}
+function logPeople(desc) { if (S.db) S.db.collection('activity').add({at: new Date().toISOString(), actor: S.meId || '', action: 'edited', kind: 'Stakeholders', desc, amount: 0, entryId: ''}).catch(() => {}); }
+async function moveEntries(from, to) {
+  const hits = [...S.entries.entries()].filter(([, e]) => e.member === from);
+  for (const [id, e] of hits) await S.db.collection('entries').doc(id).set({...e, member: to, updatedAt: new Date().toISOString(), updatedBy: S.meId || ''});
+  return hits.length;
+}
+async function renameMember(old, nu) {
+  const roles = {...(S.settings.roles || {})}; if (old in roles) { roles[nu] = roles[old]; delete roles[old]; }
+  try {
+    toast(`Renaming ${old}…`);
+    const n = await moveEntries(old, nu);
+    if (!await saveSettings({...S.settings, members: S.settings.members.map(m => m === old ? nu : m), roles, curator: S.settings.curator === old ? nu : (S.settings.curator || '')})) return;
+    if (S.f.member === old) { S.f.member = ''; $('#fMember').value = ''; }
+    logPeople(`Renamed ${old} → ${nu}`); toast(`Renamed ${old} to ${nu} on ${n} entries`);
+  } catch (e) { writeErr(e); } finally { renderPeople(); }
+}
+async function removeMember(m, to) {
+  const roles = {...(S.settings.roles || {})}; delete roles[m];
+  try {
+    const n = await moveEntries(m, to);
+    if (!await saveSettings({...S.settings, members: S.settings.members.filter(x => x !== m), roles})) return;
+    if (S.f.member === m) { S.f.member = ''; $('#fMember').value = ''; }
+    logPeople(`Removed ${m}${n ? `, moved ${n} entries to ${to || 'no one'}` : ''}`);
+    toast(`Removed ${m}${n ? ` · ${n} entries moved to ${to || 'no one'}` : ''}`);
+  } catch (e) { writeErr(e); } finally { renderPeople(); }
+}
+function openPeople() { $('#settings').hidden = true; $('#mScrim').hidden = $('#people').hidden = false; renderPeople(); }
+$('#teamPeople').onclick = openPeople;
+$('#sPeople').onclick = openPeople;
+$('#pDone').onclick = () => $('#mScrim').hidden = $('#people').hidden = true;
+$('#peopleList').onchange = async e => {
+  const n = e.target.closest('[data-name]'), r = e.target.closest('[data-role]');
+  if (n) {
+    const old = S.settings.members[+n.dataset.name], nu = n.value.trim();
+    if (nu === old) return;
+    if (!nu || S.settings.members.some(x => x !== old && x.toLowerCase() === nu.toLowerCase())) { toast(nu ? `${nu} is already a stakeholder.` : 'A name can’t be empty.'); n.value = old; return; }
+    n.blur(); await renameMember(old, nu);
+  }
+  if (r) {
+    const m = S.settings.members[+r.dataset.role], roles = {...(S.settings.roles || {}), [m]: r.value.trim()};
+    if (!roles[m]) delete roles[m];
+    r.blur(); if (await saveSettings({...S.settings, roles})) toast(`Role saved for ${m}`);
+  }
+};
+$('#peopleList').onclick = async e => {
+  const rm = e.target.closest('[data-rm]'), go = e.target.closest('[data-rmgo]'), no = e.target.closest('[data-rmno]');
+  const cb = e.target.closest('[data-cur]');
+  if (cb) { const m = S.settings.members[+cb.dataset.cur]; if (m !== S.settings.curator && await saveSettings({...S.settings, curator: m})) { logPeople(`${m} is now the curator`); toast(`${m} is now the curator and holds the cash`); renderPeople(); } return; }
+  if (rm && S.settings.members[+rm.dataset.rm] === S.settings.curator) { toast('Make someone else the curator before removing this person.'); return; }
+  if (rm) $('#ra-' + rm.dataset.rm).hidden = false;
+  if (no) $('#ra-' + no.dataset.rmno).hidden = true;
+  if (go) {
+    if (S.settings.members.length < 2) { toast('Keep at least one stakeholder.'); return; }
+    const i = +go.dataset.rmgo, sel = $('#raTo-' + i);
+    go.disabled = true; await removeMember(S.settings.members[i], sel ? sel.value : '');
+  }
+};
+$('#pAdd').onclick = async () => {
+  const nu = $('#pNew').value.trim(), role = $('#pNewRole').value.trim();
+  if (!nu) { $('#pNew').focus(); return; }
+  if (S.settings.members.some(x => x.toLowerCase() === nu.toLowerCase())) { toast(`${nu} is already a stakeholder.`); return; }
+  const roles = {...(S.settings.roles || {})}; if (role) roles[nu] = role;
+  if (await saveSettings({...S.settings, members: [...S.settings.members, nu], roles})) { $('#pNew').value = $('#pNewRole').value = ''; logPeople(`Added ${nu}`); toast(`Added ${nu}`); renderPeople(); }
+};
+$('#pNew').onkeydown = e => { if (e.key === 'Enter') $('#pAdd').click(); };
+
+/* ---------- sponsors ---------- */
+function openSponsor(s) {
+  if (!S.db) { toast('Sign in to edit sponsors.'); return; }
+  S.spEdit = s?.regId || null;
+  const r = S.spEdit ? S.sponsors.get(S.spEdit) : null;
+  $('#spTitle').textContent = s ? s.name : 'Add sponsor';
+  $('#spName').value = s?.name || ''; $('#spType').value = r?.type || (s?.payments ? 'money' : 'in-kind');
+  $('#spYear').value = r?.year || S.year || curYear(); $('#spValue').value = r?.value || ''; $('#spNotes').value = r?.notes || '';
+  $('#spDel').hidden = !S.spEdit;
+  $('#mScrim').hidden = $('#spModal').hidden = false; setTimeout(() => $('#spName').focus(), 30);
+}
+const closeSponsor = () => { $('#mScrim').hidden = $('#spModal').hidden = true; S.spEdit = null; };
+$('#addSponsor').onclick = () => openSponsor(null);
+$('#spCancel').onclick = closeSponsor;
+$('#spSave').onclick = async () => {
+  const name = $('#spName').value.trim();
+  if (!name) { toast('Enter the sponsor name.'); $('#spName').focus(); return; }
+  const id = S.spEdit || S.db.collection('sponsors').doc().id, old = S.sponsors.get(id);
+  const data = {...(old || {createdAt: new Date().toISOString(), createdBy: S.meId || ''}), name, type: $('#spType').value, year: parseInt($('#spYear').value, 10) || curYear(), value: parseFloat(String($('#spValue').value).replace(/[, ]/g, '')) || 0, notes: $('#spNotes').value.trim(), updatedAt: new Date().toISOString()};
+  try { $('#spSave').disabled = true; await S.db.collection('sponsors').doc(id).set(data); logPeopleKind('Sponsor', `${old ? 'Updated' : 'Added'} ${name} (${data.year})`); closeSponsor(); toast(`${old ? 'Saved' : 'Added'} ${name}`); }
+  catch (e) { writeErr(e); } finally { $('#spSave').disabled = false; }
+};
+$('#spDel').onclick = async () => {
+  const id = S.spEdit, r = S.sponsors.get(id); if (!id || !r) return;
+  try { await S.db.collection('sponsors').doc(id).delete(); closeSponsor(); logPeopleKind('Sponsor', `Removed ${r.name} (${r.year})`);
+    toast(`Removed ${r.name}`, async () => { try { await S.db.collection('sponsors').doc(id).set(r); toast('Restored'); } catch (e) { writeErr(e); } }); }
+  catch (e) { writeErr(e); }
+};
+function logPeopleKind(kind, desc) { if (S.db) S.db.collection('activity').add({at: new Date().toISOString(), actor: S.meId || '', action: 'edited', kind, desc, amount: 0, entryId: ''}).catch(() => {}); }
+$('#yearSeg').onclick = e => { const b = e.target.closest('[data-y]'); if (b) { S.year = +b.dataset.y; render(); } };
+$('#spBody').onclick = e => { const tr = e.target.closest('tr[data-key]'); if (!tr) return; const s = calc().years[S.year]?.sponsors.get(tr.dataset.key); if (s) openSponsor(s); };
+$('#handover').onclick = async e => {
+  const b = e.target.closest('[data-reimb]'); if (!b) return;
+  const id = b.dataset.reimb, en = S.entries.get(id);
+  try { b.disabled = true; await putEntry(id, {...en, reimbursed: true, reimbursedAt: new Date().toISOString()}, 'edited'); toast(`${en.member} reimbursed for ${en.desc}`); } catch (er) { b.disabled = false; writeErr(er); }
+};
+$('#dCat').onchange = syncKind;
+$('#dPaid').onchange = syncKind;
+$('#dAmount').oninput = updVat;
+$('#dTaxable').onchange = updVat;
+
+/* ---------- seasons ---------- */
+$('#seasonSel').onchange = e => setSeason(+e.target.value);
+$('#sNewSeason').onclick = () => {
+  const from = curYear(), to = from + 1;
+  if (S.season !== from) { toast(`Switch to the current season (${from}) first.`); return; }
+  const c = calc();
+  $('#settings').hidden = true;
+  confirmBox(`Start season ${to}?`, `Season ${from} closes. ${to} starts with an opening cash balance of EGP ${fmt(c.cashBal)} held by ${c.curator || 'the curator'} and an opening bank balance of EGP ${fmt(c.bankBal)}. Stakeholders and phases are copied over; you can change them after.`, `Start ${to}`, () => startSeason(from, to, c));
+};
+async function startSeason(from, to, c) {
+  if (!S.db) return;
+  try {
+    const now = new Date().toISOString(), cur = c.curator || S.settings.members[0] || '';
+    await S.db.doc('settings/season-' + from).set(Object.fromEntries(SEASON_KEYS.map(k => [k, S.settings[k] ?? null])));
+    await S.db.doc('settings/season-' + to).set({members: S.settings.members, curator: cur, roles: S.settings.roles || {}, phases: S.settings.phases, budgets: {}});
+    const base = {status: 'done', phase: 'General', date: '', note: `Closing balance of season ${from}`, year: to, category: 'opening', order: 1, createdAt: now, createdBy: S.meId || '', fatora: '', receiptId: '', source: `Season ${from} close`};
+    await S.db.collection('entries').doc(`open-${to}-cash`).set({...base, kind: 'cashIn', amount: Math.round(c.cashBal * 100) / 100, desc: `Opening cash from ${from}`, member: cur, counterparty: ''});
+    await S.db.collection('entries').doc(`open-${to}-bank`).set({...base, kind: 'bankIn', amount: Math.round(c.bankBal * 100) / 100, desc: `Opening bank balance from ${from}`, counterparty: `Opening balance from ${from}`, member: '', taxable: false, vatRate: 0});
+    await S.db.doc('settings/main').set({...S.main, currentYear: to});
+    S.main = {...S.main, currentYear: to};
+    logPeopleKind('Season', `Closed ${from} and started ${to}`);
+    setSeason(to); toast(`Season ${to} started`);
+  } catch (e) { writeErr(e); }
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); };
+$('#alerts').onclick = e => {
+  const b = e.target.closest('[data-go]'); if (!b) return;
+  if (b.dataset.go === 'planned') { S.f.kind = 'planned'; setTab('ledger'); render(); } else setTab(b.dataset.go);
+};
+$('#addBtn').onclick = () => openDrawer();
+$('#dClose').onclick = $('#dCancel').onclick = $('#scrim').onclick = closeDrawer;
+$('#dSave').onclick = saveDrawer;
+$('#dForm').onsubmit = e => { e.preventDefault(); saveDrawer(); };
+$('#dKind').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { S.dKind = b.dataset.k; syncKind(); } };
+$('#dDelete').onclick = () => { const id = S.editing, e = S.entries.get(id); confirmBox('Delete this entry?', `${e.desc} · EGP ${fmt(e.amount)}${e.transferId ? ' (both sides of the transfer)' : ''}. You can undo right after.`, 'Delete', () => { closeDrawer(); deleteEntry(id); }); };
+$('#kindSeg').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { S.f.kind = b.dataset.k; renderLedger(); } };
+$('#q').oninput = e => { S.f.q = e.target.value; renderLedger(); };
+$('#fMember').onchange = e => { S.f.member = e.target.value; renderLedger(); };
+$('#fPhase').onchange = e => { S.f.phase = e.target.value; renderLedger(); };
+$('#fFatora').onchange = e => { S.f.fatora = e.target.value; if (e.target.value) S.f.kind = 'cashOut'; renderLedger(); };
+$('#clearF').onclick = () => { Object.assign(S.f, {kind:'all', q:'', member:'', phase:'', fatora:''}); $('#q').value = ''; $('#fMember').value = $('#fPhase').value = $('#fFatora').value = ''; renderLedger(); };
+$('thead').onclick = e => { const th = e.target.closest('th[data-s]'); if (!th) return; const s = th.dataset.s; S.f.dir = S.f.sort === s ? -S.f.dir : (s === 'amount' ? -1 : 1); S.f.sort = s; renderLedger(); };
+$('#ledgerBody').onclick = e => { const tr = e.target.closest('tr[data-id]'); if (tr) openDrawer(tr.dataset.id); };
+$('#members').onclick = e => { const b = e.target.closest('[data-member]'); if (!b) return; Object.assign(S.f, {kind:'all', member: b.dataset.member}); $('#fMember').value = b.dataset.member; setTab('ledger'); renderLedger(); };
+$('#phases').onclick = e => { const b = e.target.closest('[data-phase-go]'); if (!b) return; Object.assign(S.f, {kind:'all', phase: b.dataset.phaseGo}); $('#fPhase').value = b.dataset.phaseGo; setTab('ledger'); renderLedger(); };
+$('#phases').onchange = async e => {
+  const inp = e.target.closest('input[data-phase]'); if (!inp) return;
+  const v = parseFloat(inp.value.replace(/[, ]/g, '')) || 0;
+  const budgets = {...(S.settings.budgets || {}), [inp.dataset.phase]: v};
+  if (await saveSettings({...S.settings, budgets})) toast(`Budget for ${inp.dataset.phase} saved`);
+};
+$('#missing').onclick = async e => {
+  const b = e.target.closest('[data-yes]'); if (!b) return;
+  const id = b.dataset.yes, en = S.entries.get(id);
+  try { await putEntry(id, {...en, fatora: 'Yes'}, 'edited'); toast(`Fatora marked for ${en.desc}`); } catch (er) { writeErr(er); }
+};
+$('#missing').onchange = async e => {
+  const inp = e.target.closest('input[data-up]'); if (!inp || !inp.files[0]) return;
+  const id = inp.dataset.up, en = S.entries.get(id);
+  try { toast('Uploading receipt…'); const up = await S.assets.upload(inp.files[0]); await putEntry(id, {...en, receiptId: up.id, receiptType: up.contentType, fatora: 'Yes'}, 'edited'); toast(`Receipt attached to ${en.desc}`); }
+  catch (er) { toast('Upload failed: ' + (er?.message || er?.code || 'unknown error')); }
+};
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
+  if (e.key === 'Escape') { if (!$('#drawer').hidden) closeDrawer(); $('#mScrim').hidden = $('#modal').hidden = $('#settings').hidden = $('#people').hidden = true; if (!$('#spModal').hidden) closeSponsor(); }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openDrawer(); }
+  if (e.key === '/') { e.preventDefault(); setTab('ledger'); $('#q').focus(); }
+});
+
+/* ---------- boot ---------- */
+async function boot() {
+  let start = 'overview';
+  try { start = (location.hash || '').slice(1) || localStorage.getItem('tedx-tab') || 'overview'; } catch {}
+  setTab(start); render();
+  const use = n => window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+  const [db, user, assets, downloads, sample] = await Promise.all(['db', 'user', 'assets', 'downloads', 'sample'].map(use));
+  Object.assign(S, {db, user, assets, downloads, sample});
+  if (!db) {
+    const b = $('#banner'); b.hidden = false; b.textContent = 'The cashbook could not connect to the database. Check config.js and your internet connection.';
+    render(); return;
+  }
+  if (user) {
+    try { S.meId = await user.id(); } catch {}
+    try { const w = await user.can('data.write'); if (w === false) S.canWrite = false; } catch {}
+  }
+  if (!S.canWrite) { const b = $('#banner'); b.hidden = false; b.textContent = 'You have view-only access. Ask an admin to give you edit rights.'; }
+  const live = $('#liveDot');
+  db.collection('entries').limit(1000).onSnapshot(snap => {
+    S.allEntries = new Map(snap.docs.map(d => [d.id, d.data()])); scope(); S.loaded = true;
+    live.innerHTML = '<span style="color:var(--good)">●</span> Live'; render();
+  }, err => { live.textContent = 'Offline'; console.error(err); });
+  db.collection('sponsors').limit(1000).onSnapshot(snap => { S.sponsors = new Map(snap.docs.map(d => [d.id, d.data()])); render(); });
+  db.doc('settings/main').onSnapshot(d => {
+    S.main = d.exists ? d.data() : {};
+    if (S.season == null) {
+      let y = null; try { y = +localStorage.getItem('tedx-season') || null; } catch {}
+      S.season = y && y <= curYear() ? y : curYear(); S.year = S.season; watchSeason();
+    }
+    applySettings(); scope(); render();
+  });
+  db.collection('activity').orderBy('at', 'desc').limit(150).onSnapshot(snap => { S.activity = snap.docs.map(d => d.data()); if (S.tab === 'activity') renderActivity(); });
+}
+boot();
+})();
+</script>
+</body>
+</html>
