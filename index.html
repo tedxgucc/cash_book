@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B090A">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cashbook">
 <title>TEDxGUC Cashbook</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -226,6 +234,88 @@ tfoot td{background:var(--stage-2);font-weight:700}
 .kpi.hot{border-color:var(--red)}
 @media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}}
 .tp-money{color:var(--good);border-color:var(--good)}.tp-in-kind{color:var(--warn);border-color:var(--warn)}.tp-both{color:var(--fg);border-color:var(--fg)}.tp-pledged{color:var(--muted);border:1px dashed var(--muted)}
+/* phone: bottom navigation + card layouts */
+.bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:30;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;background:color-mix(in srgb,var(--ink) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--rule);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.bottomnav button{background:none;border:0;color:var(--muted);display:grid;justify-items:center;gap:2px;font-size:11px;font-weight:600;padding:6px 0;min-height:52px;cursor:pointer;position:relative;-webkit-tap-highlight-color:transparent}
+.bottomnav button svg{width:22px;height:22px}
+.bottomnav button[aria-selected="true"]{color:var(--fg)}
+.bottomnav button[aria-selected="true"] svg{color:var(--red)}
+.bottomnav .fab{width:62px;height:62px;min-height:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,#ff1f45,var(--red) 60%,var(--red-deep));color:#fff;font-size:34px;font-weight:300;line-height:1;justify-self:center;align-self:center;margin-top:-30px;box-shadow:0 10px 26px rgba(235,0,40,.45);display:grid;place-items:center;border:4px solid var(--ink);padding:0}
+.bottomnav .fab:active{transform:scale(.94)}
+.bottomnav .nb{position:absolute;top:3px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:10px;line-height:16px;padding:0 4px}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:46;background:var(--stage);border-top:1px solid var(--rule);border-radius:20px 20px 0 0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:8px;max-height:85%;overflow-y:auto}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--dim);justify-self:center;margin-bottom:4px}
+.sheet .si{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 16px;border-radius:12px;background:var(--stage-2);border:1px solid var(--rule);font-size:16px;font-weight:600;cursor:pointer;text-align:left;width:100%}
+.sheet .si[aria-selected="true"]{border-color:var(--red)}
+.sheet .si .nb{min-width:20px;height:20px;border-radius:10px;background:var(--red);color:#fff;font-size:11px;line-height:20px;padding:0 6px;text-align:center}
+@media (max-width:720px){
+  nav.tabs{display:none}
+  .bottomnav{display:grid}
+  header.top .bar{padding-block:10px;gap:10px}
+  .brand img{height:20px}
+  #addBtn,#liveDot,#signOutBtn{display:none}
+  .season{max-width:none;padding:6px 8px}
+  .bar .sp{display:none}
+  #settingsBtn{margin-left:auto}
+  main{padding-block:16px calc(108px + env(safe-area-inset-bottom,0px))}
+  section.tab,.grid{gap:14px}
+  .panel{padding:16px}
+  h2{font-size:20px}
+  .hero{padding:22px 18px;gap:16px}
+  .hero .big{font-size:clamp(46px,14vw,70px)}
+  .split{padding:10px 12px}.split b{font-size:18px}
+  .alerts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding-inline:4px}
+  .alerts::-webkit-scrollbar,.seg::-webkit-scrollbar{display:none}
+  .alert{flex:none;max-width:85vw}
+  .inp,select,textarea{font-size:16px}
+  .seg{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .seg button{flex:none;padding:8px 14px}
+  .seg{min-width:0;max-width:100%}
+  #dKind{flex-wrap:wrap;overflow:visible}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .filters .search{grid-column:1/-1}
+  .filters #clearF{justify-self:start}
+  .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .drawer{width:100%;border-left:0}
+  .drawer-f .btn{padding:10px 16px}
+  .member,.phase{padding:16px}
+  .cur-n{gap:18px}.cur-n b{font-size:22px}
+  /* ledger rows become cards */
+  #tab-ledger .tbl-wrap{border:0;border-radius:0;overflow:visible}
+  #tab-ledger table,#tab-ledger tbody,#tab-ledger tfoot{display:block}
+  #tab-ledger thead{display:none}
+  #tab-ledger tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--stage);margin-bottom:10px;align-items:center}
+  #tab-ledger tbody tr:active{background:var(--stage-2)}
+  #tab-ledger tbody tr:hover td{background:none}
+  #tab-ledger td{border:0;padding:0;min-width:0}
+  #tab-ledger tbody td:nth-child(1),#tab-ledger tbody td:nth-child(8){display:none}
+  #tab-ledger tbody td:nth-child(3){grid-column:1;grid-row:1;font-weight:600;font-size:15px}
+  #tab-ledger tbody td:nth-child(4){grid-column:2;grid-row:1;text-align:right;font-family:var(--display);font-size:19px;font-weight:800;font-variation-settings:"wdth" 80}
+  #tab-ledger tbody td:nth-child(2){grid-column:1;grid-row:2;display:flex;flex-wrap:wrap;gap:4px}
+  #tab-ledger tbody td:nth-child(7){grid-column:2;grid-row:2;text-align:right}
+  #tab-ledger tbody td:nth-child(5){grid-column:1;grid-row:3;font-size:13px;color:var(--muted)}
+  #tab-ledger tbody td:nth-child(6){grid-column:2;grid-row:3;text-align:right;font-size:13px;color:var(--muted)}
+  #tab-ledger td.empty{grid-column:1/-1;grid-row:auto}
+  #tab-ledger tfoot{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:5}
+  #tab-ledger tfoot tr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--stage-2);border:1px solid var(--rule)}
+  #tab-ledger tfoot td{background:none;padding:0;border:0}
+  #tab-ledger tfoot td:last-child{display:none}
+  /* sponsors table becomes cards */
+  #tab-sponsors .tbl-wrap{border:0;border-radius:0;overflow:visible}
+  #tab-sponsors table,#tab-sponsors tbody{display:block}
+  #tab-sponsors thead{display:none}
+  #spBody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--stage-2);margin-bottom:10px;align-items:center}
+  #spBody td{border:0;padding:0;min-width:0;background:none!important}
+  #spBody td:nth-child(3),#spBody td:nth-child(4),#spBody td:nth-child(7){display:none}
+  #spBody td:nth-child(1){grid-column:1;grid-row:1}
+  #spBody td:nth-child(5){grid-column:2;grid-row:1;font-family:var(--display);font-size:18px;font-weight:800}
+  #spBody td:nth-child(2){grid-column:1;grid-row:2}
+  #spBody td:nth-child(6){grid-column:2;grid-row:2;font-size:13px}
+  #spBody td:nth-child(6)::before{content:"in-kind ";color:var(--muted);font-family:var(--mono);font-size:10px;text-transform:uppercase}
+  #spBody td:nth-child(8){grid-column:1/-1}
+  #spBody td:nth-child(8):empty{display:none}
+  #spBody td.empty{grid-column:1/-1}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media (max-width:560px){.brand .sub{display:none}.btn .t{display:none}.row2{grid-template-columns:1fr}}
 </style>
@@ -414,6 +504,26 @@ tfoot td{background:var(--stage-2);font-weight:700}
   </section>
 </main>
 
+<!-- phone navigation -->
+<nav class="bottomnav" id="bottomNav" aria-label="Sections">
+  <button type="button" data-tab="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
+  <button type="button" data-tab="ledger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Ledger</span></button>
+  <button type="button" class="fab" id="fabAdd" aria-label="New entry">+</button>
+  <button type="button" data-tab="team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.3c3 .3 5.5 2.7 5.5 5.7"/></svg><span>Team</span></button>
+  <button type="button" id="moreBtn" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span>More</span><span class="nb" id="moreBadge" hidden></span></button>
+</nav>
+<div class="scrim" id="sheetScrim" hidden></div>
+<div class="sheet" id="moreSheet" hidden role="dialog" aria-label="More sections">
+  <div class="grab"></div>
+  <button type="button" class="si" data-tab="sponsors">Sponsors &amp; income</button>
+  <button type="button" class="si" data-tab="phases">Phases &amp; budget</button>
+  <button type="button" class="si" data-tab="fatora">Fatora <span class="nb" id="moreFatora" hidden></span></button>
+  <button type="button" class="si" data-tab="activity">Activity</button>
+  <button type="button" class="si" data-tab="ask">Ask Claude</button>
+  <button type="button" class="si" data-act="settings">Settings</button>
+  <button type="button" class="si" data-act="signout" hidden>Sign out</button>
+</div>
+
 <!-- entry drawer -->
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-label="Entry editor">
@@ -503,6 +613,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="backend.js"></script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 <script>
 (() => {
 const $ = (s, r = document) => r.querySelector(s);
@@ -833,6 +944,7 @@ function renderFatora(c) {
     return `<a class="rcpt" href="#" data-rid="${esc(e.receiptId)}" target="_blank" rel="noopener">${e.receiptType === 'application/pdf' ? '<div class="pdf">PDF</div>' : `<img data-rid-img="${esc(e.receiptId)}" alt="Receipt for ${esc(e.desc)}" loading="lazy">`}<span class="trunc">${esc(e.desc)} · ${fmt(e.amount)}</span></a>`;
   }).join('') : `<div class="muted">${S.assets ? 'No receipts yet. Use Attach on the chase list or the entry editor to add a photo of a fatora.' : 'Receipt uploads are available to editors of this page.'}</div>`;
   const badge = $('#fatoraBadge'); badge.hidden = !c.missing.length; badge.textContent = c.missing.length;
+  ['#moreBadge', '#moreFatora'].forEach(s => { const el = $(s); if (el) { el.hidden = !c.missing.length; el.textContent = c.missing.length; } });
   window.hydrateReceipts?.($('#receipts'));
 }
 
@@ -882,7 +994,9 @@ function render() {
 function setTab(t) {
   if (!document.getElementById('tab-' + t)) t = 'overview';
   S.tab = t;
-  $$('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  $$('#tabs button, #bottomNav [data-tab], #moreSheet [data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  $('#moreBtn')?.setAttribute('aria-selected', ['sponsors', 'phases', 'fatora', 'activity', 'ask'].includes(t));
+  closeSheet(); window.scrollTo?.(0, 0);
   $$('section.tab').forEach(s => s.hidden = s.id !== 'tab-' + t);
   if (t === 'activity') renderActivity();
   try { history.replaceState(null, '', '#' + t); } catch {}
@@ -1274,6 +1388,21 @@ async function startSeason(from, to, c) {
 }
 
 /* ---------- events ---------- */
+function closeSheet() { const s = $('#moreSheet'); if (s && !s.hidden) { s.hidden = true; $('#sheetScrim').hidden = true; } }
+$('#bottomNav').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'fabAdd') return openDrawer();
+  if (b.id === 'moreBtn') { const s = $('#moreSheet'); const open = s.hidden; s.hidden = !open; $('#sheetScrim').hidden = !open; $('[data-act="signout"]').hidden = !document.getElementById('signOutBtn'); return; }
+  if (b.dataset.tab) setTab(b.dataset.tab);
+};
+$('#sheetScrim').onclick = closeSheet;
+$('#moreSheet').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.tab) return setTab(b.dataset.tab);
+  closeSheet();
+  if (b.dataset.act === 'settings') $('#settingsBtn').click();
+  if (b.dataset.act === 'signout') document.getElementById('signOutBtn')?.click();
+};
 $('#tabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); };
 $('#alerts').onclick = e => {
   const b = e.target.closest('[data-go]'); if (!b) return;
@@ -1314,7 +1443,7 @@ $('#missing').onchange = async e => {
 };
 document.addEventListener('keydown', e => {
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
-  if (e.key === 'Escape') { if (!$('#drawer').hidden) closeDrawer(); $('#mScrim').hidden = $('#modal').hidden = $('#settings').hidden = $('#people').hidden = true; if (!$('#spModal').hidden) closeSponsor(); }
+  if (e.key === 'Escape') { closeSheet(); if (!$('#drawer').hidden) closeDrawer(); $('#mScrim').hidden = $('#modal').hidden = $('#settings').hidden = $('#people').hidden = true; if (!$('#spModal').hidden) closeSponsor(); }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openDrawer(); }
   if (e.key === '/') { e.preventDefault(); setTab('ledger'); $('#q').focus(); }

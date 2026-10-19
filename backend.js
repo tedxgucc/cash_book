@@ -80,7 +80,7 @@
     const bar = document.querySelector('header .bar'), anchor = document.getElementById('settingsBtn');
     if (bar && anchor) {
       const b = document.createElement('button');
-      b.className = 'btn sm ghost'; b.type = 'button'; b.textContent = 'Sign out'; b.title = email;
+      b.id = 'signOutBtn'; b.className = 'btn sm ghost'; b.type = 'button'; b.textContent = 'Sign out'; b.title = email;
       b.onclick = async () => { await sb.auth.signOut(); location.reload(); };
       bar.insertBefore(b, anchor);
     }
