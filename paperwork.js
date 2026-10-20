@@ -12,6 +12,18 @@ window.PW = (() => {
   const parse = v => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? {y: +m[1], m: +m[2], d: +m[3]} : null; };
   const dateShort = v => { const p = parse(v); return p ? `${String(p.d).padStart(2, '0')} / ${String(p.m).padStart(2, '0')} / ${p.y}` : ''; };
   const dateLong = v => { const p = parse(v); return p ? `${p.d} ${MONTHS[p.m - 1]} ${p.y}` : ''; };
+  // PDF libraries, loaded the first time someone downloads.
+  const LIBS = {
+    jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    h2c: 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+  };
+  const ready = {jspdf: () => window.jspdf, h2c: () => window.html2canvas};
+  const loading = {};
+  const lib = k => ready[k]() ? Promise.resolve() : loading[k] ||= new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = LIBS[k]; s.onload = res;
+    s.onerror = () => { delete loading[k]; s.remove(); rej(new Error('Could not load the PDF tools. Check your internet connection.')); };
+    document.head.appendChild(s);
+  });
   const amountOf = v => { const n = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0; };
 
   /* ---------- amount in words: 12500 -> "Twelve thousand five hundred" ---------- */
@@ -258,7 +270,7 @@ SUBJECT: <a subject line under 12 words>
     host.style.cssText = 'position:absolute;left:0;top:0;width:794px;z-index:-1;pointer-events:none';
     document.body.appendChild(host);
     try {
-      await Promise.all([window.CB.lib('jspdf'), window.CB.lib('h2c')]);
+      await Promise.all([lib('jspdf'), lib('h2c')]);
       const v = values();
       host.innerHTML = expensePage(v) + memoPage(v);
       await Promise.all([...host.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
