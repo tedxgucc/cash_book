@@ -396,7 +396,8 @@ window.CB = (() => {
 .cb-lg-p{color:var(--muted,#6E6468);font-size:12px}
 .cb-lg-tot{border-top:1px solid var(--rule,#E6E0E1);padding-top:6px;font-weight:700}
 .rp-overlay{position:fixed;inset:0;z-index:80;background:#241E20;overflow:auto;-webkit-overflow-scrolling:touch}
-.rp-bar{position:sticky;top:0;z-index:2;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px max(16px,env(safe-area-inset-left,0px));padding-top:max(12px,env(safe-area-inset-top,0px));background:#0B090A;border-bottom:1px solid #2C2528;color:#F5F2F1}
+.rp-bar{position:sticky;top:0;z-index:2;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px max(16px,env(safe-area-inset-left,0px));padding-top:max(12px,env(safe-area-inset-top,0px));background:#0B090A;border-bottom:1px solid #2C2528;color:#F5F2F1;--ink:#0B090A;--stage:#151113;--stage-2:#1D181A;--rule:#2C2528;--fg:#F5F2F1;--muted:#A69B9F;--dim:#6E6468;color-scheme:dark}
+.rp-bar .inp,.rp-bar .btn:not(.red),.rp-bar .icon-btn{color:#F5F2F1}
 .rp-bar b{font-size:16px}.rp-bar .lbl{margin-left:10px}
 .rp-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .rp-pages{display:grid;justify-content:center;gap:20px;padding:20px 16px 60px}
