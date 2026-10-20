@@ -60,13 +60,13 @@ window.PW = (() => {
   }
 
   /* ---------- state ---------- */
-  const st = {type: 'expense', name: '', date: ymd(new Date()), amount: '', just: '', subject: '', memo: '', memoEdited: false, subjectEdited: false};
+  const st = {type: '', name: '', date: ymd(new Date()), amount: '', just: '', subject: '', memo: '', memoEdited: false, subjectEdited: false};
   // Sponsor approval (SAO Sponsorship Agreement). booth: 'guc' or 'private'.
   const blankSp = () => ({name: '', start: '', end: '', category: '', booth: 'guc', fees: '', desc: ''});
   st.sp = blankSp();
   const DRAFT = 'tedx-paperwork';
   const saveDraft = () => { try { localStorage.setItem(DRAFT, JSON.stringify(st)); } catch {} };
-  const loadDraft = () => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || '{}'); Object.assign(st, d); st.sp = {...blankSp(), ...(d.sp || {})}; } catch {} };
+  const loadDraft = () => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || '{}'); Object.assign(st, d, {type: ''}); st.sp = {...blankSp(), ...(d.sp || {})}; } catch {} };
 
   /* ---------- the two pages ---------- */
   const line = (v, w, cls = '') => `<span class="pw-ln ${cls}" style="min-width:${w}px">${v ? esc(v) : '&nbsp;'}</span>`;
@@ -237,9 +237,12 @@ window.PW = (() => {
   function preview() {
     clearTimeout(t);
     t = setTimeout(() => {
-      const sp = st.type === 'sponsor';
-      $('#pwExpForm').hidden = $('#pwExpPrev').hidden = sp;
+      // Nothing shows until a paper type is picked.
+      const sp = st.type === 'sponsor', ex = st.type === 'expense';
+      $('#pwExpForm').hidden = $('#pwExpPrev').hidden = !ex;
       $('#pwSpForm').hidden = $('#pwSpPrev').hidden = !sp;
+      $('#pwPick').hidden = sp || ex;
+      if (!sp && !ex) return;
       if (sp) $('#pwPrevSp').innerHTML = sponsorPage(st.sp);
       else { const v = values(); $('#pwPrevExp').innerHTML = expensePage(v); $('#pwPrevMemo').innerHTML = memoPage(v); }
       scale(); if (!sp) fitCheck();
@@ -264,7 +267,7 @@ window.PW = (() => {
   const SP_FIELDS = {pwSpName: 'name', pwSpStart: 'start', pwSpEnd: 'end', pwSpCat: 'category', pwSpBooth: 'booth', pwSpFees: 'fees', pwSpDesc: 'desc'};
   function onInput(e) {
     const id = e.target.id, val = e.target.value;
-    if (id === 'pwType') { st.type = val === 'sponsor' ? 'sponsor' : 'expense'; saveDraft(); preview(); return; }
+    if (id === 'pwType') { st.type = ['sponsor', 'expense'].includes(val) ? val : ''; saveDraft(); preview(); return; }
     if (SP_FIELDS[id]) {
       st.sp[SP_FIELDS[id]] = val;
       $('#pwSpWords').textContent = amountOf(st.sp.fees) ? words(amountOf(st.sp.fees)) : '';
@@ -371,7 +374,8 @@ SUBJECT: <a subject line under 8 words>
         <div class="pw-form">
         <div class="panel pw-form">
           <div class="field"><label for="pwType">Choose your paper type</label>
-            <select class="inp" id="pwType"><option value="expense">Expense approval (form + memo)</option><option value="sponsor">Sponsor approval (sponsorship agreement)</option></select></div>
+            <select class="inp" id="pwType"><option value="" disabled>Choose…</option><option value="expense">Expense approval (form + memo)</option><option value="sponsor">Sponsor approval (sponsorship agreement)</option></select></div>
+          <span class="pw-hint" id="pwPick">Pick the paper you need and its form will appear here.</span>
         </div>
         <div class="panel pw-form" id="pwSpForm" hidden>
           <div class="panel-h" style="margin:0"><h2>Sponsor details</h2></div>
@@ -392,7 +396,7 @@ SUBJECT: <a subject line under 8 words>
             <button class="btn ghost" id="pwSpClear" type="button">Start a new agreement</button>
           </div>
         </div>
-        <div class="panel pw-form" id="pwExpForm">
+        <div class="panel pw-form" id="pwExpForm" hidden>
           <div class="panel-h" style="margin:0"><h2>1 · Your request</h2></div>
           <div class="row2">
             <div class="field"><label for="pwName">Your name</label><input class="inp" id="pwName" list="pwPeople" placeholder="Requested by" autocomplete="name"><datalist id="pwPeople"></datalist></div>
@@ -415,7 +419,7 @@ SUBJECT: <a subject line under 8 words>
           </div>
         </div>
         </div>
-        <div class="pw-prev" id="pwExpPrev">
+        <div class="pw-prev" id="pwExpPrev" hidden>
           <div class="lbl" style="justify-self:start">Preview · page 1 of 2 · Expense Approval Request</div>
           <div class="pw-frame" id="pwPrevExp"></div>
           <div class="lbl" style="justify-self:start">Page 2 of 2 · Memo</div>
