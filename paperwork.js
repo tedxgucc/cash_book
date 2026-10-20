@@ -50,14 +50,12 @@ window.PW = (() => {
 
   /* ---------- memo text ---------- */
   const sentence = s => { s = s.trim().replace(/\s+/g, ' '); if (!s) return ''; s = s.charAt(0).toUpperCase() + s.slice(1); return /[.!?]$/.test(s) ? s : s + '.'; };
-  const defaultSubject = v => `Request for approval of an expense of EGP ${fmt(amountOf(v.amount))}`;
+  const defaultSubject = v => `Expense request: EGP ${fmt(amountOf(v.amount))}`;
   function templateMemo(v) {
     const amt = amountOf(v.amount);
     return [
-      `On behalf of the TEDxGUC team, we kindly request your approval of an expense of EGP ${fmt(amt)} (${words(amt)}).`,
-      `This amount is needed for the following purpose: ${sentence(v.just) || '[justification]'}`,
-      `This expense is necessary for the preparation and delivery of TEDxGUC's activities, and the requested amount reflects the expected cost. The full details are in the attached Expense Approval Request form, and all supporting invoices (fatora) will be submitted to the Student Activity Office once payment is made.`,
-      `We would be grateful for your approval of this request at your earliest convenience.`
+      `We kindly request your approval of EGP ${fmt(amt)} (${words(amt)}) for: ${sentence(v.just) || '[justification]'}`,
+      `The Expense Approval Request form is attached. Thank you.`
     ].join('\n\n');
   }
 
@@ -310,15 +308,14 @@ Facts (use only these, do not invent vendors, dates, quantities or numbers):
 - Justification from the team: """${st.just.trim()}"""
 
 Rules:
-- 2 to 4 short paragraphs, about 120 to 200 words in total, clear and polite English.
-- Explain what the money is for and why it is needed for the event, based on the justification.
-- Mention that the attached Expense Approval Request form has the details and that invoices (fatora) will be submitted after payment.
-- End by asking for their approval.
+- Keep it short and simple: 2 short paragraphs, 40 to 70 words in total, plain polite English.
+- Say the amount and what it is for, in one or two sentences.
+- Mention that the Expense Approval Request form is attached, and ask for their approval.
 - Do NOT include a greeting ("Dear ...") or a sign-off ("Kind regards"); the template already has them.
 - Plain text only, no markdown, no bullet points.
 
 Reply in exactly this format:
-SUBJECT: <a subject line under 12 words>
+SUBJECT: <a subject line under 8 words>
 
 <memo body>`;
     ctl?.abort(); ctl = new AbortController();
