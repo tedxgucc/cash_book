@@ -39,10 +39,10 @@ window.CB = (() => {
       r('Closing balance (cash + bank)', cur.c.total, prev.c.total), r('Number of sponsors', cur.Y.sponsors.size, prev.Y.sponsors.size, true, true)
     ];
   }
-  function monthly(c) {
+  function monthly(c, only) { // only: 'cash' or 'bank' to look at one money source
     const m = {};
     c.done.forEach(e => {
-      if (e.transferId || !e.date) return;
+      if (e.transferId || !e.date || (only && !e.kind.startsWith(only))) return;
       const inc = e.kind === 'cashIn' || e.kind === 'bankIn';
       if (inc && A.catOf(e) === 'opening') return;
       const k = String(e.date).slice(0, 7); if (!/^\d{4}-\d{2}$/.test(k)) return;
@@ -463,8 +463,170 @@ window.CB = (() => {
   const h2 = (t, cap = '') => `<div class="rp-h2"><h2>${esc(t)}</h2><span>${esc(cap)}</span></div>`;
   const lg2 = (a, b) => `<div class="rp-lg"><span><i style="background:${LIGHT.prev}"></i>${a}</span><span><i style="background:${LIGHT.cur}"></i>${b}</span></div>`;
 
-  // Build the report as a list of blocks; blocks flow onto A4 pages, and {page:true} starts a new one.
-  function reportBlocks(y) {
+  /* ---------- shared report pieces ---------- */
+  const TITLES = {full: 'Financial Report', cash: 'Cash Report', bank: 'Bank Report', uni: 'Sponsorship Report'};
+  const FILES = {full: 'Financial_Report', cash: 'Cash_Report', bank: 'Bank_Report', uni: 'Sponsorship_Report'};
+  const todayStr = () => new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'});
+  const dateCell = d => { const t = d ? new Date(d + 'T00:00:00') : null; return t && !isNaN(t) ? t.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : '—'; };
+  // Collects report blocks. A section title waits and joins the next block, so it never sits alone at a page bottom.
+  function blocks() {
+    const B = []; let pend = '';
+    return {
+      B,
+      push: b => { if (pend) { b.html = pend + b.html; pend = ''; } B.push(b); },
+      section: (n, t) => { pend = `<h1 class="rp-section"><small>Section ${n}</small>${t}</h1>`; }
+    };
+  }
+  const coverHtml = (y, title, text) => `<div class="rp-cover"><div class="dot"></div><div class="ring"></div><div><div class="k">TEDxGUC · Season ${y}</div><h1>${esc(title)}</h1><p>${text}</p></div></div>`;
+  const signHtml = (roles = ['Prepared by', 'Reviewed by (Curator)', 'Date']) => ({html: `<div class="rp-sign">${roles.map(r => `<div>${esc(r)}</div>`).join('')}</div>`, sign: true});
+  const cmpTable = (rows, y, prevHas, title = 'Compared with last season') => h2(title, `${y - 1} vs ${y}`) + `<table class="rp-tbl"><thead><tr><th>Measure</th><th class="r">${y - 1}</th><th class="r">${y}</th><th class="r">Change</th></tr></thead><tbody>${rows.map(m => `<tr><td>${esc(m.label)}</td><td class="r">${m.count ? m.prev : moneyCell(m.prev)}</td><td class="r"><b>${m.count ? m.cur : moneyCell(m.cur)}</b></td><td class="r">${deltaCell(m)}</td></tr>`).join('')}</tbody></table>` + (prevHas ? '' : `<p class="rp-note" style="margin-top:6px">No entries for ${y - 1} are in the cashbook yet, so last season shows as zero.</p>`);
+  const cmpRow = (label, cur, prev, goodUp = true, count = false) => ({label, cur, prev, goodUp, count});
+  const cmpChart = (cats, prevV, curV, y) => `<div class="rp-chart">${img(C.bars(cats, [{name: String(y - 1), color: LIGHT.prev, values: prevV}, {name: String(y), color: LIGHT.cur, values: curV}], LIGHT, {w: 700, h: 170}), 700, 170, 'Comparison with last season')}${lg2(y - 1, y)}</div>`;
+  // Long lists split into chunks so each piece fits on a page.
+  function listBlocks(push, title, cap, head, rows, total, chunk = 20) {
+    if (!rows.length) { push({html: h2(title, cap) + '<p class="rp-note">Nothing recorded.</p>'}); return; }
+    for (let i = 0; i < rows.length; i += chunk) {
+      const last = i + chunk >= rows.length;
+      push({html: (i ? h2(title + ' (continued)') : h2(title, cap)) + `<table class="rp-tbl"><thead><tr>${head}</tr></thead><tbody>${rows.slice(i, i + chunk).join('')}${last && total ? total : ''}</tbody></table>`});
+    }
+  }
+  // Spending by phase for one money source ('cash', 'bank' or 'total'), as donut + table.
+  function phaseBlock(c, key, label) {
+    const T = LIGHT, phs = phaseList(c), items = phs.map((p, i) => ({label: p.name, value: p[key], color: T.series[i % T.series.length]})).filter(i => i.value > 0);
+    const tot = sum(items.map(i => i.value));
+    if (!items.length) return h2('Spending by phase', label) + '<p class="rp-note">No spending recorded yet.</p>';
+    return h2('Spending by phase', label) + `<div class="rp-two" style="grid-template-columns:150px 1fr"><div>${img(C.donut(items, T, {size: 150, center: compact(tot), sub: 'EGP spent', centerSize: 18}), 150, 150, 'Spending by phase')}</div>
+      <table class="rp-tbl"><thead><tr><th>Phase</th><th class="r">Spent</th><th class="r">Share</th></tr></thead><tbody>${items.map(i => `<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;background:${i.color}"></i>${esc(i.label)}</td><td class="r">${fmt(i.value)}</td><td class="r">${Math.round(i.value / tot * 100)}%</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="r">${fmt(tot)}</td><td class="r">100%</td></tr></tbody></table></div>`;
+  }
+  function monthlyBlock(c, only, title) {
+    const T = LIGHT, m = monthly(c, only);
+    if (!m.keys.length) return null;
+    return {html: h2(title, 'By month, from entry dates') + `<div class="rp-chart">${img(C.bars(m.cats, [{name: 'In', color: T.series[2], values: m.inV}, {name: 'Out', color: T.cur, values: m.outV}], T, {w: 700, h: 190, labels: m.keys.length <= 6}), 700, 190, title)}<div class="rp-lg"><span><i style="background:${T.series[2]}"></i>Money in${only === 'cash' ? '' : ' (before VAT)'}</span><span><i style="background:${T.cur}"></i>Money out</span></div></div>`};
+  }
+  const kindLabel = e => e.transferId ? 'Transfer' : A.catOf(e) === 'opening' ? 'Opening balance' : A.catOf(e) === 'sponsor' ? 'Sponsor' : 'Other income';
+
+  // Money sponsors paid in a season (no in-kind), split into bank and cash.
+  function sponsorMoney(y) {
+    const map = new Map();
+    [...A.S.allEntries.values()].forEach(e => {
+      if (A.yearOf(e) !== y || e.status === 'planned' || e.transferId || (e.kind !== 'bankIn' && e.kind !== 'cashIn') || A.catOf(e) !== 'sponsor') return;
+      const name = A.sponsorOf(e), key = name.toLowerCase();
+      const s = map.get(key) || {key, name, bank: 0, cash: 0, vat: 0, payments: 0};
+      const a = +e.amount || 0;
+      if (e.kind === 'bankIn') { s.bank += a; s.vat += A.vatOf(e); } else s.cash += a;
+      s.payments++; map.set(key, s);
+    });
+    const list = [...map.values()].map(s => ({...s, total: s.bank + s.cash})).sort((a, b) => b.total - a.total);
+    return {list, map, bank: sum(list.map(s => s.bank)), cash: sum(list.map(s => s.cash)), vat: sum(list.map(s => s.vat)), total: sum(list.map(s => s.total)), count: list.length};
+  }
+
+  /* ---------- cash report ---------- */
+  function cashBlocks(y) {
+    const S = A.S, cur = season(y), prev = season(y - 1), c = cur.c, pc = prev.c, T = LIGHT;
+    const {B, push, section} = blocks();
+    const cashOther = cc => sum(cc.done.filter(e => e.kind === 'cashIn' && !e.transferId && A.catOf(e) === 'other').map(e => e.amount));
+    const cov = c.outTotal ? c.fYesAmt / c.outTotal : 1;
+    push({html: coverHtml(y, 'Cash Report', `Prepared ${todayStr()}. All cash collected and spent this season, held by ${c.curator ? `the curator, ${esc(c.curator)}` : 'the curator'}. Amounts in EGP.`)});
+    push({html: `<div class="rp-kpis">${kpi('Cash in', c.cashIn, 'All cash collected')}${kpi('Cash out', c.cashOut, `${c.done.filter(e => e.kind === 'cashOut').length} payments`)}${kpi('Cash in hand', c.cashBal, 'Cash in − cash out', 'hot')}${kpi(`In ${c.curator || 'curator'}'s box`, c.box, 'Includes money owed back', 'dark')}</div>`});
+    push({html: `<div class="rp-kpis">${kpi('Sponsorship in cash', cur.Y.spCash, 'Paid by sponsors in cash')}${kpi('Other cash income', cashOther(c), 'Tickets, merch…')}${kpi('Owed to members', c.owed, 'Paid from own pocket')}${kpi('Fatora coverage', Math.round(cov * 100) + '%', `${c.missing.length} cash-outs missing one`, '', '')}</div>`});
+    push({html: cmpTable([
+      cmpRow('Cash in', c.cashIn, pc.cashIn), cmpRow('Sponsorship in cash', cur.Y.spCash, prev.Y.spCash), cmpRow('Other cash income', cashOther(c), cashOther(pc)),
+      cmpRow('Cash out', c.cashOut, pc.cashOut, false), cmpRow('Cash in hand', c.cashBal, pc.cashBal),
+      cmpRow('Number of cash payments', c.done.filter(e => e.kind === 'cashOut').length, pc.done.filter(e => e.kind === 'cashOut').length, false, true)
+    ], y, prev.has) + cmpChart(['Cash in', 'Cash out', 'Cash in hand'], [pc.cashIn, pc.cashOut, pc.cashBal], [c.cashIn, c.cashOut, c.cashBal], y)});
+    section(1, 'Where the cash went');
+    push({html: phaseBlock(c, 'cash', 'Cash only')});
+    const mb = monthlyBlock(c, 'cash', 'Cash in vs cash out'); if (mb) push(mb);
+    section(2, 'Cash entries');
+    const ins = c.done.filter(e => e.kind === 'cashIn'), outs = c.done.filter(e => e.kind === 'cashOut');
+    listBlocks(push, 'Cash in', `${ins.length} entries`, '<th>Date</th><th>Description</th><th>Collected by</th><th>Type</th><th class="r">Amount</th>',
+      ins.map(e => `<tr><td>${dateCell(e.date)}</td><td>${esc(e.desc || '—')}</td><td>${esc(e.member || '—')}</td><td><span class="rp-pill">${kindLabel(e)}</span></td><td class="r">${fmt(e.amount)}</td></tr>`),
+      `<tr class="tot"><td colspan="4">Total cash in</td><td class="r">${fmt(c.cashIn)}</td></tr>`);
+    listBlocks(push, 'Cash out', `${outs.length} payments`, '<th>Date</th><th>Description</th><th>Phase</th><th>Paid by</th><th>Fatora</th><th class="r">Amount</th>',
+      outs.map(e => `<tr><td>${dateCell(e.date)}</td><td>${esc(e.desc || '—')}${e.paidFrom === 'pocket' && !e.reimbursed ? ' <span class="rp-pill">own pocket</span>' : ''}</td><td>${esc(e.phase || 'General')}</td><td>${esc(e.member || '—')}</td><td>${e.fatora === 'Yes' ? '<span class="rp-pill good">Yes</span>' : `<span class="rp-pill bad">${esc(e.fatora || 'Not set')}</span>`}</td><td class="r">${fmt(e.amount)}</td></tr>`),
+      `<tr class="tot"><td colspan="5">Total cash out</td><td class="r">${fmt(c.cashOut)}</td></tr>`);
+    section(3, 'Team &amp; invoices');
+    teamBlocks(push, c);
+    const plannedCash = c.planned.filter(e => e.kind === 'cashOut');
+    if (plannedCash.length) push({html: h2('Planned cash spending, not paid yet', `${fmt(sum(plannedCash.map(e => e.amount)))} EGP`) + `<table class="rp-tbl"><thead><tr><th>Item</th><th>Phase</th><th class="r">Amount</th></tr></thead><tbody>${plannedCash.slice(0, 10).map(e => `<tr><td>${esc(e.desc || '—')}</td><td>${esc(e.phase || 'General')}</td><td class="r">${+e.amount ? fmt(e.amount) : '<span class="rp-flat">no amount yet</span>'}</td></tr>`).join('')}</tbody></table>`});
+    push(signHtml());
+    return B;
+  }
+
+  /* ---------- bank report ---------- */
+  function bankBlocks(y) {
+    const S = A.S, cur = season(y), prev = season(y - 1), c = cur.c, pc = prev.c, T = LIGHT;
+    const {B, push, section} = blocks();
+    const ins = c.done.filter(e => e.kind === 'bankIn'), outs = c.done.filter(e => e.kind === 'bankOut');
+    const bankOther = cc => sum(cc.done.filter(e => e.kind === 'bankIn' && !e.transferId && A.catOf(e) === 'other').map(e => e.amount));
+    const bankSp = cc => sum(cc.done.filter(e => e.kind === 'bankIn' && !e.transferId && A.catOf(e) === 'sponsor').map(e => e.amount));
+    push({html: coverHtml(y, 'Bank Report', `Prepared ${todayStr()}. Every deposit and payment on the bank account this season. ${S.settings.taxRate}% VAT is removed from deposits. Amounts in EGP.`)});
+    push({html: `<div class="rp-kpis">${kpi('Bank in (before VAT)', c.bankIn, `${ins.length} deposits`)}${kpi(`VAT removed (${S.settings.taxRate}%)`, c.tax, 'Not ours to spend')}${kpi('Bank out', c.bankOut, `${outs.length} payments`)}${kpi('Bank balance', c.bankBal, 'After VAT and payments', 'hot')}</div>`});
+    push({html: `<div class="rp-kpis">${kpi('Sponsor deposits', bankSp(c), 'Before VAT')}${kpi('Other deposits', bankOther(c), 'Non-sponsor income')}${kpi('Bank after VAT', c.bankNet, 'Before payments')}${kpi('Planned bank spend', sum(c.planned.filter(e => e.kind === 'bankOut').map(e => e.amount)), 'Not paid yet', 'dark')}</div>`});
+    push({html: cmpTable([
+      cmpRow('Bank in (before VAT)', c.bankIn, pc.bankIn), cmpRow('Sponsor deposits', bankSp(c), bankSp(pc)), cmpRow('VAT removed', c.tax, pc.tax, false),
+      cmpRow('Bank after VAT', c.bankNet, pc.bankNet), cmpRow('Bank out', c.bankOut, pc.bankOut, false), cmpRow('Bank balance', c.bankBal, pc.bankBal),
+      cmpRow('Number of deposits', ins.length, pc.done.filter(e => e.kind === 'bankIn').length, true, true)
+    ], y, prev.has) + cmpChart(['Bank in', 'After VAT', 'Bank out', 'Balance'], [pc.bankIn, pc.bankNet, pc.bankOut, pc.bankBal], [c.bankIn, c.bankNet, c.bankOut, c.bankBal], y)});
+    section(1, 'Bank movement');
+    const steps = [
+      {label: 'Bank in', from: 0, to: c.bankIn, color: T.fg},
+      {label: `VAT ${S.settings.taxRate}%`, from: c.bankIn, to: c.bankIn - c.tax, color: '#8E0B22', delta: true},
+      {label: 'After VAT', from: 0, to: c.bankNet, color: T.fg},
+      {label: 'Bank out', from: c.bankNet, to: c.bankBal, color: T.cur, delta: true},
+      {label: 'Bank balance', from: 0, to: c.bankBal, color: c.bankBal < 0 ? T.bad : T.good}
+    ];
+    push({html: h2('From deposits to balance', 'Before VAT → after payments') + `<div class="rp-chart">${img(C.waterfall(steps, T, {w: 700, h: 190}), 700, 190, 'Bank waterfall')}</div>`});
+    push({html: phaseBlock(c, 'bank', 'Bank payments only')});
+    const mb = monthlyBlock(c, 'bank', 'Deposits vs payments'); if (mb) push(mb);
+    section(2, 'Bank entries');
+    listBlocks(push, 'Deposits', `${ins.length} deposits`, '<th>Date</th><th>From</th><th>Type</th><th class="r">Gross</th><th class="r">VAT</th><th class="r">Net</th>',
+      ins.map(e => { const v = A.vatOf(e); return `<tr><td>${dateCell(e.date)}</td><td>${esc(e.counterparty || e.desc || '—')}</td><td><span class="rp-pill">${kindLabel(e)}</span></td><td class="r">${fmt(e.amount)}</td><td class="r">${v ? fmt(v) : '—'}</td><td class="r">${fmt(e.amount - v)}</td></tr>`; }),
+      `<tr class="tot"><td colspan="3">Total deposits</td><td class="r">${fmt(c.bankIn)}</td><td class="r">${fmt(c.tax)}</td><td class="r">${fmt(c.bankNet)}</td></tr>`);
+    listBlocks(push, 'Payments', `${outs.length} payments`, '<th>Date</th><th>To</th><th>Description</th><th>Phase</th><th class="r">Amount</th>',
+      outs.map(e => `<tr><td>${dateCell(e.date)}</td><td>${esc(e.counterparty || '—')}</td><td>${esc(e.desc || '—')}</td><td>${esc(e.phase || 'General')}</td><td class="r">${fmt(e.amount)}</td></tr>`),
+      `<tr class="tot"><td colspan="4">Total payments</td><td class="r">${fmt(c.bankOut)}</td></tr>`);
+    push(signHtml());
+    return B;
+  }
+
+  /* ---------- university (sponsorship) report ---------- */
+  function uniBlocks(y) {
+    const S = A.S, T = LIGHT, cur = sponsorMoney(y), prev = sponsorMoney(y - 1);
+    const {B, push, section} = blocks();
+    push({html: coverHtml(y, 'Sponsorship Report', `Prepared ${todayStr()} for the German University in Cairo. The number of sponsors and the money they paid this season, received in the bank and in cash. Goods and services given in kind are not included. Amounts in EGP.`)});
+    push({html: `<div class="rp-kpis">${kpi('Number of sponsors', String(cur.count), 'Sponsors who paid money', 'hot', '')}${kpi('Total sponsorship', cur.total, 'Bank + cash', 'dark')}${kpi('Received in bank', cur.bank, `Before ${S.settings.taxRate}% VAT`)}${kpi('Received in cash', cur.cash, 'Handed to the curator')}</div>`});
+    push({html: `<p class="rp-note">Bank amounts are what sponsors deposited. ${S.settings.taxRate}% VAT on those deposits is ${fmt(cur.vat)} EGP, so the bank keeps ${fmt(cur.bank - cur.vat)} EGP after VAT.</p>`});
+    const avg = s => s.count ? s.total / s.count : 0;
+    push({html: cmpTable([
+      cmpRow('Number of sponsors', cur.count, prev.count, true, true), cmpRow('Sponsorship received in bank', cur.bank, prev.bank), cmpRow('Sponsorship received in cash', cur.cash, prev.cash),
+      cmpRow('Total sponsorship', cur.total, prev.total), cmpRow('Average per sponsor', Math.round(avg(cur)), Math.round(avg(prev)))
+    ], y, prev.count > 0) + cmpChart(['In bank', 'In cash', 'Total'], [prev.bank, prev.cash, prev.total], [cur.bank, cur.cash, cur.total], y)});
+    section(1, 'Sponsors');
+    const share = C.fold(cur.list.map(s => ({label: s.name, value: s.total})), T);
+    push({html: h2('Share of sponsorship money', `${y} · bank + cash`) + `<div class="rp-don">${share.length ? img(C.donut(share, T, {size: 150, center: String(cur.count), sub: 'sponsors', centerSize: 20}), 150, 150, 'Sponsor share') + C.legend(share, {}) : '<p class="rp-note">No sponsorship money recorded yet.</p>'}</div>`});
+    const split = [{label: 'Received in bank', value: cur.bank, color: T.series[0]}, {label: 'Received in cash', value: cur.cash, color: T.series[1]}].filter(i => i.value > 0);
+    if (split.length) push({html: h2('Bank vs cash', String(y)) + `<div class="rp-don">${img(C.donut(split, T, {size: 150, center: compact(cur.total), sub: 'EGP', centerSize: 18}), 150, 150, 'Bank vs cash') + C.legend(split, {total: true})}</div>`});
+    listBlocks(push, 'Sponsor list', `${cur.count} sponsors in ${y}`, `<th>#</th><th>Sponsor</th><th class="r">Bank</th><th class="r">Cash</th><th class="r">Total</th><th class="r">${y - 1} total</th>`,
+      cur.list.map((s, i) => `<tr><td>${i + 1}</td><td><b>${esc(s.name)}</b></td><td class="r">${s.bank ? fmt(s.bank) : '—'}</td><td class="r">${s.cash ? fmt(s.cash) : '—'}</td><td class="r"><b>${fmt(s.total)}</b></td><td class="r">${prev.map.get(s.key) ? fmt(prev.map.get(s.key).bank + prev.map.get(s.key).cash) : '<span class="rp-flat">new</span>'}</td></tr>`),
+      `<tr class="tot"><td></td><td>Total (${cur.count} sponsors)</td><td class="r">${fmt(cur.bank)}</td><td class="r">${fmt(cur.cash)}</td><td class="r">${fmt(cur.total)}</td><td class="r">${fmt(prev.total)}</td></tr>`, 18);
+    push(signHtml(['Prepared by', 'TEDxGUC Curator', 'Date']));
+    return B;
+  }
+
+  function teamBlocks(push, c) {
+    const ms = Object.values(c.members), cov = c.outTotal ? c.fYesAmt / c.outTotal : 1;
+    push({html: h2('Team wallets', c.curator ? `Curator: ${c.curator}` : 'No curator set') + `<table class="rp-tbl"><thead><tr><th>Member</th><th class="r">Brought in</th><th class="r">Spent</th><th class="r">To reimburse</th><th class="r">No fatora</th><th class="r">Coverage</th></tr></thead><tbody>${ms.map(mm => { const cv = mm.spent ? mm.fYes / mm.spent : null; return `<tr><td><b>${esc(mm.name)}</b>${mm.name === c.curator ? ' <span class="rp-pill">curator</span>' : ''}</td><td class="r">${fmt(mm.collected)}</td><td class="r">${fmt(mm.spent)}</td><td class="r">${mm.owed ? fmt(mm.owed) : '—'}</td><td class="r">${mm.missAmt ? fmt(mm.missAmt) : '—'}</td><td class="r">${cv == null ? '<span class="rp-flat">—</span>' : `<span class="rp-pill ${cv > .8 ? 'good' : cv > .5 ? '' : 'bad'}">${Math.round(cv * 100)}%</span>`}</td></tr>`; }).join('')}</tbody></table>`});
+    const miss = c.missing.slice(0, 8);
+    push({html: h2('Invoice (fatora) coverage', 'Cash-out with a fatora') + `<div class="rp-two" style="grid-template-columns:150px 1fr"><div>${img(C.ring(cov, LIGHT, {size: 140}), 140, 140, 'Fatora coverage')}<p class="rp-note" style="margin-top:6px">${fmt(c.fYesAmt)} of ${fmt(c.outTotal)} EGP has a fatora.</p></div>
+      <div>${miss.length ? `<table class="rp-tbl"><thead><tr><th>Still missing a fatora${c.missing.length > 8 ? ` (top 8 of ${c.missing.length})` : ''}</th><th>Member</th><th class="r">Amount</th></tr></thead><tbody>${miss.map(([, e]) => `<tr><td>${esc(e.desc || '—')}</td><td>${esc(e.member || '—')}</td><td class="r">${fmt(e.amount)}</td></tr>`).join('')}</tbody></table>` : '<p class="rp-note"><b>Every cash-out has a fatora.</b></p>'}</div></div>`});
+    if (c.pocketOpen.length) push({html: h2('Waiting for reimbursement', `${fmt(c.owed)} EGP`) + `<table class="rp-tbl"><thead><tr><th>Member</th><th>For</th><th class="r">Amount</th></tr></thead><tbody>${c.pocketOpen.slice(0, 8).map(([, e]) => `<tr><td>${esc(e.member || '—')}</td><td>${esc(e.desc || '')}</td><td class="r">${fmt(e.amount)}</td></tr>`).join('')}</tbody></table>`});
+  }
+
+  const reportBlocks = (y, type) => (type === 'cash' ? cashBlocks : type === 'bank' ? bankBlocks : type === 'uni' ? uniBlocks : fullBlocks)(y);
+
+  // Full financial report: everything.
+  function fullBlocks(y) {
     const S = A.S, cur = season(y), prev = season(y - 1), c = cur.c, Y = cur.Y, T = LIGHT;
     const today = new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'});
     const B = [];
@@ -524,17 +686,17 @@ window.CB = (() => {
     return B;
   }
 
-  function pageShell(y) {
+  function pageShell(y, type) {
     const p = document.createElement('div'); p.className = 'rp-page';
-    p.innerHTML = `<header class="rp-head"><img class="rp-tedx" src="${LOGO.tedx}" alt="TEDxGUC"><div class="rp-mid">Financial report<br>Season ${y}</div><img class="rp-guc" src="${LOGO.guc}" alt="German University in Cairo"></header><div class="rp-body"></div><footer class="rp-foot"><span>TEDxGUC Cashbook · For the TEDxGUC team</span><span class="pn"></span></footer>`;
+    p.innerHTML = `<header class="rp-head"><img class="rp-tedx" src="${LOGO.tedx}" alt="TEDxGUC"><div class="rp-mid">${TITLES[type]}<br>Season ${y}</div><img class="rp-guc" src="${LOGO.guc}" alt="German University in Cairo"></header><div class="rp-body"></div><footer class="rp-foot"><span>TEDxGUC Cashbook · For the TEDxGUC team</span><span class="pn"></span></footer>`;
     return p;
   }
-  async function layout(host, y) {
+  async function layout(host, y, type) {
     host.innerHTML = '';
     let page = null, body = null;
-    const next = () => { page = pageShell(y); host.appendChild(page); body = page.querySelector('.rp-body'); };
+    const next = () => { page = pageShell(y, type); host.appendChild(page); body = page.querySelector('.rp-body'); };
     next();
-    for (const b of reportBlocks(y)) {
+    for (const b of reportBlocks(y, type)) {
       if (b.page && body.children.length) next();
       const el = document.createElement('div'); el.innerHTML = b.html; el.style.minWidth = '0';
       if (b.sign) el.style.marginTop = 'auto';
@@ -547,17 +709,18 @@ window.CB = (() => {
     return pages;
   }
 
-  let overlay, rpSeason;
+  let overlay, rpSeason, rpType = 'full';
   function ensureOverlay() {
     if (overlay) return;
     overlay = document.createElement('div'); overlay.className = 'rp-overlay'; overlay.hidden = true;
     overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true'); overlay.setAttribute('aria-label', 'Financial report');
-    overlay.innerHTML = `<div class="rp-bar"><div><b>Financial report</b><span class="lbl" id="rpMeta"></span></div><div class="rp-actions"><select class="inp" id="rpSeason" aria-label="Report season"></select><button class="btn sm" id="rpXlsx" type="button">Excel</button><button class="btn sm red" id="rpPdf" type="button">Download PDF</button><button class="icon-btn" id="rpClose" type="button" aria-label="Close report">✕</button></div></div><div class="rp-pages" id="rpPages"></div>`;
+    overlay.innerHTML = `<div class="rp-bar"><div><b id="rpTitle">Financial report</b><span class="lbl" id="rpMeta"></span></div><div class="rp-actions"><select class="inp" id="rpType" aria-label="Report type"><option value="full">Full financial report</option><option value="cash">Cash report</option><option value="bank">Bank report</option><option value="uni">University report (sponsors)</option></select><select class="inp" id="rpSeason" aria-label="Report season"></select><button class="btn sm" id="rpXlsx" type="button">Excel</button><button class="btn sm red" id="rpPdf" type="button">Download PDF</button><button class="icon-btn" id="rpClose" type="button" aria-label="Close report">✕</button></div></div><div class="rp-pages" id="rpPages"></div>`;
     document.body.appendChild(overlay);
     $('#rpClose').onclick = closeReport;
     $('#rpPdf').onclick = () => pdf();
     $('#rpXlsx').onclick = () => excel(rpSeason).catch(err);
     $('#rpSeason').onchange = e => { rpSeason = +e.target.value; draw(); };
+    $('#rpType').onchange = e => { rpType = e.target.value; draw(); };
     window.addEventListener('resize', fit);
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay.hidden) closeReport(); });
   }
@@ -566,13 +729,16 @@ window.CB = (() => {
     const host = $('#rpPages');
     host.querySelectorAll('.rp-page').forEach(p => p.style.zoom = 1);
     try { await document.fonts?.ready; } catch {}
-    const pages = await layout(host, rpSeason);
+    const pages = await layout(host, rpSeason, rpType);
+    $('#rpTitle').textContent = TITLES[rpType];
     $('#rpMeta').textContent = `Season ${rpSeason} · ${pages.length} pages`;
     fit();
   }
-  async function openReport() {
+  async function openReport(type) {
     if (!A) return;
     ensureOverlay();
+    if (TITLES[type]) rpType = type;
+    $('#rpType').value = rpType;
     const S = A.S;
     rpSeason = S.season;
     const seasons = [...new Set([S.season, ...[...S.allEntries.values()].map(A.yearOf)])].filter(Boolean).sort((a, b) => b - a);
@@ -592,16 +758,16 @@ window.CB = (() => {
     document.body.appendChild(host);
     try {
       await Promise.all([lib('jspdf'), lib('h2c')]);
-      const pages = await layout(host, rpSeason);
+      const pages = await layout(host, rpSeason, rpType);
       const {jsPDF} = window.jspdf, doc = new jsPDF({unit: 'mm', format: 'a4', compress: true});
-      doc.setProperties({title: `TEDxGUC Financial Report ${rpSeason}`, author: 'TEDxGUC', creator: 'TEDxGUC Cashbook'});
+      doc.setProperties({title: `TEDxGUC ${TITLES[rpType]} ${rpSeason}`, author: 'TEDxGUC', creator: 'TEDxGUC Cashbook'});
       for (let i = 0; i < pages.length; i++) {
         busy.textContent = `Creating the PDF… page ${i + 1} of ${pages.length}`;
         const canvas = await html2canvas(pages[i], {scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, scrollX: 0, scrollY: -window.scrollY, windowWidth: 1200});
         if (i) doc.addPage();
         doc.addImage(canvas.toDataURL('image/jpeg', .92), 'JPEG', 0, 0, 210, 297);
       }
-      await A.offerFile(`TEDxGUC_Financial_Report_${rpSeason}.pdf`, doc.output('blob'));
+      await A.offerFile(`TEDxGUC_${FILES[rpType]}_${rpSeason}.pdf`, doc.output('blob'));
     } catch (e) { err(e); }
     finally { host.remove(); busy.remove(); btn.disabled = false; }
   }
@@ -613,5 +779,5 @@ window.CB = (() => {
     let t = 0, lastW = window.innerWidth;
     window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (lastC && window.innerWidth !== lastW) { lastW = window.innerWidth; graphs(lastC); } }, 200); });
   }
-  return {init, graphs, refresh: () => lastC && graphs(lastC), excel: y => excel(y).catch(err), openReport};
+  return {init, graphs, refresh: () => lastC && graphs(lastC), excel: y => excel(y).catch(err), openReport: t => openReport(t)};
 })();
