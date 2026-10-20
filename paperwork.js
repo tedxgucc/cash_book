@@ -62,10 +62,13 @@ window.PW = (() => {
   }
 
   /* ---------- state ---------- */
-  const st = {name: '', date: ymd(new Date()), amount: '', just: '', subject: '', memo: '', memoEdited: false, subjectEdited: false};
+  const st = {type: 'expense', name: '', date: ymd(new Date()), amount: '', just: '', subject: '', memo: '', memoEdited: false, subjectEdited: false};
+  // Sponsor approval (SAO Sponsorship Agreement). booth: 'guc' or 'private'.
+  const blankSp = () => ({name: '', start: '', end: '', category: '', booth: 'guc', fees: '', desc: ''});
+  st.sp = blankSp();
   const DRAFT = 'tedx-paperwork';
   const saveDraft = () => { try { localStorage.setItem(DRAFT, JSON.stringify(st)); } catch {} };
-  const loadDraft = () => { try { Object.assign(st, JSON.parse(localStorage.getItem(DRAFT) || '{}')); } catch {} };
+  const loadDraft = () => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || '{}'); Object.assign(st, d); st.sp = {...blankSp(), ...(d.sp || {})}; } catch {} };
 
   /* ---------- the two pages ---------- */
   const line = (v, w, cls = '') => `<span class="pw-ln ${cls}" style="min-width:${w}px">${v ? esc(v) : '&nbsp;'}</span>`;
@@ -121,6 +124,39 @@ window.PW = (() => {
   }
   const values = () => ({...st, subject: st.subject || defaultSubject(st), memo: st.memoEdited ? st.memo : templateMemo(st)});
 
+  /* ---------- sponsorship agreement (one page) ---------- */
+  const BOX = on => `<img class="pw-cb" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" fill="#fff" stroke="#000" stroke-width="1.3"/>${on ? '<path d="M3.3 7.2l2.6 2.7 4.9-5.6" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>' : ''}</svg>`)}" alt="${on ? 'ticked' : 'not ticked'}">`;
+  const BOOTH = {guc: 'GUC Booth', private: 'Private Booth/Truck'};
+  function sponsorPage(sp) {
+    const fees = amountOf(sp.fees), b = BOX(false);
+    const td = (html, o = {}) => `<td${o.c ? ` colspan="${o.c}"` : ''}${o.r ? ` rowspan="${o.r}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}>${html}</td>`;
+    const v = s => `<span class="pw-val">${esc(s)}</span>`;
+    return `<div class="pw-page pw-spa"><table>
+      <colgroup><col style="width:97px"><col style="width:22px"><col style="width:130px"><col style="width:57px"><col style="width:75px"><col style="width:73px"><col style="width:107px"><col style="width:79px"></colgroup>
+      <tr style="height:72px">${td(`<img class="pw-spa-logo" src="${LOGO.guc}" alt="German University in Cairo">`, {c: 2})}${td('Sponsorship Agreement', {c: 4})}${td('Student Activities Office', {c: 2})}</tr>
+      <tr style="height:42px">${td('AWG Name')}${td('TedxGUC', {c: 3})}${td('Sponsor<br>Name')}${td(v(sp.name), {c: 3})}</tr>
+      <tr style="height:54px">${td('Start Date')}${td(v(dateShort(sp.start)), {c: 3})}${td('End Date')}${td(v(dateShort(sp.end)), {c: 2})}${td(`<div class="pw-bt"><div>Booth Type</div><div>${v(BOOTH[sp.booth] || '')}</div></div>`, {cls: 'pw-np'})}</tr>
+      <tr style="height:76px">${td('Agreed Fees')}${td(v(fees ? `EGP ${fmt(fees)}` : ''), {c: 4})}${td('Clinic Approval', {c: 3, cls: 'pw-l'})}</tr>
+      <tr style="height:62px">${td('Sponsor<br>Description')}${td(v(sp.desc), {c: 7, cls: 'pw-l'})}</tr>
+      <tr style="height:36px">${td('Sponsor Booth')}${td(BOX(sp.booth === 'guc'))}${td('GUC Booth', {c: 3})}${td(BOX(sp.booth === 'private'))}${td('Private Booth/Truck', {c: 2})}</tr>
+      <tr style="height:62px">${td('Sponsor<br>Category')}${td(v(sp.category), {c: 7, cls: 'pw-l'})}</tr>
+      <tr>${td('Needed Services', {c: 8})}</tr>
+      <tr>${td('Agreed Service', {c: 2})}${td('Marketing Service', {c: 4})}${td('Logistics “by the Sponsors”', {c: 2})}</tr>
+      <tr>${td('ONSPOT')}${td(b)}${td('MPC Coverage', {c: 2})}${td(b)}${td('Design Must be attached as Hard Copy', {r: 4})}${td('Truck')}${td(b)}</tr>
+      <tr>${td('Social Media')}${td(b)}${td('ON SPOT Mail', {c: 2})}${td(b)}${td('Refrigerator')}${td(b)}</tr>
+      <tr>${td('Booth')}${td(b)}${td('Flyer Distribution', {c: 2})}${td(b)}${td('Grill')}${td(b)}</tr>
+      <tr>${td('')}${td(b)}${td('Posters in Boxes', {c: 2})}${td(b)}${td('Coffee Machine')}${td(b)}</tr>
+      <tr>${td('')}${td(b)}${td('Technical Service', {c: 2})}${td('Marketing Materials', {c: 2})}${td('Display<br>Refrigerator', {r: 2})}${td(b, {r: 2})}</tr>
+      <tr>${td('Others')}${td(b)}${td('Electricity')}${td(b)}${td('Banners')}${td(b)}</tr>
+      <tr>${td('Specify', {c: 2, r: 2})}${td('Electricity Mustn’t Exceed 6KW', {c: 2})}${td('Posters')}${td(b)}${td('Others')}${td(b)}</tr>
+      <tr>${td('Electricity Can’t Exceed 1.5KW Per Device', {c: 2})}${td('Flyers')}${td(b)}${td('Specify', {c: 2})}</tr>
+      <tr style="height:34px">${td('Signatures', {c: 7})}${td('Office<br>Review')}</tr>
+      <tr style="height:64px">${td('Dr. Manar Mansour', {c: 2, cls: 'pw-nm'})}${td('Academic Advisor', {c: 3})}${td('', {c: 2, cls: 'pw-sgn'})}${td('')}</tr>
+      <tr style="height:64px">${td('Mr. Yehia Al Razzaz', {c: 2, cls: 'pw-nm'})}${td('Youth welfare Director', {c: 3})}${td('', {c: 2, cls: 'pw-sgn'})}${td('<div class="pw-cm">Comments</div>', {cls: 'pw-np pw-top-al'})}</tr>
+      <tr style="height:64px">${td('Dr. Ehab Abu El kheir', {c: 2, cls: 'pw-nm'})}${td('GUC Vice President', {c: 3})}${td('', {c: 2, cls: 'pw-sgn'})}${td('')}</tr>
+    </table></div>`;
+  }
+
   /* ---------- UI ---------- */
   const CSS = `
 .pw-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start}
@@ -172,6 +208,23 @@ window.PW = (() => {
 .pw-sd{color:#666;font-size:13px;margin-top:5px}
 .pw-memo footer{text-align:center;color:#666;font-size:13px;margin:70px 0 30px}
 .pw-memo footer b{color:#EB0028}
+/* sponsorship agreement */
+.pw-spa{font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:700;padding:118px 0 0 77px}
+.pw-spa table{width:640px;border-collapse:collapse;table-layout:fixed;border:3px solid #000;border-left-width:5px}
+.pw-spa td{border:1.5px solid #000;text-align:center;vertical-align:middle;padding:2px 4px;line-height:1.2;height:22px;overflow:hidden;word-wrap:break-word}
+.pw-spa td.pw-l{text-align:left;padding-left:8px}
+.pw-spa td.pw-np{padding:0}
+.pw-spa td.pw-nm{white-space:nowrap;font-size:12px;padding:2px}
+.pw-spa td.pw-sgn{border-color:#BBB #BBB #BBB #000}
+.pw-spa td.pw-top-al{vertical-align:top}
+.pw-spa-logo{width:108px;display:block;margin:0 auto}
+.pw-cb{width:13px;height:13px;display:block;margin:0 auto}
+.pw-val{font-weight:400;font-size:13.5px}
+.pw-bt{display:grid;grid-template-rows:28px 24px}
+.pw-bt>div{display:grid;place-items:center}
+.pw-bt>div:first-child{border-bottom:1.5px solid #000}
+.pw-bt .pw-val{font-size:10.5px;line-height:1.1}
+.pw-cm{border-bottom:1.5px solid #000;padding:8px 0}
 `;
 
   function scale() {
@@ -184,10 +237,12 @@ window.PW = (() => {
   function preview() {
     clearTimeout(t);
     t = setTimeout(() => {
-      const v = values();
-      $('#pwPrevExp').innerHTML = expensePage(v);
-      $('#pwPrevMemo').innerHTML = memoPage(v);
-      scale(); fitCheck();
+      const sp = st.type === 'sponsor';
+      $('#pwExpForm').hidden = $('#pwExpPrev').hidden = sp;
+      $('#pwSpForm').hidden = $('#pwSpPrev').hidden = !sp;
+      if (sp) $('#pwPrevSp').innerHTML = sponsorPage(st.sp);
+      else { const v = values(); $('#pwPrevExp').innerHTML = expensePage(v); $('#pwPrevMemo').innerHTML = memoPage(v); }
+      scale(); if (!sp) fitCheck();
     }, 80);
   }
   // Warn when the memo text is too long for one page.
@@ -200,9 +255,21 @@ window.PW = (() => {
     $('#pwSubject').value = st.subjectEdited ? st.subject : defaultSubject(st);
     $('#pwMemo').value = st.memoEdited ? st.memo : templateMemo(st);
     $('#pwWords').textContent = amountOf(st.amount) ? words(amountOf(st.amount)) : '';
+    $('#pwType').value = st.type;
+    const sp = st.sp;
+    $('#pwSpName').value = sp.name; $('#pwSpStart').value = sp.start; $('#pwSpEnd').value = sp.end;
+    $('#pwSpCat').value = sp.category; $('#pwSpBooth').value = sp.booth; $('#pwSpFees').value = sp.fees; $('#pwSpDesc').value = sp.desc;
+    $('#pwSpWords').textContent = amountOf(sp.fees) ? words(amountOf(sp.fees)) : '';
   }
+  const SP_FIELDS = {pwSpName: 'name', pwSpStart: 'start', pwSpEnd: 'end', pwSpCat: 'category', pwSpBooth: 'booth', pwSpFees: 'fees', pwSpDesc: 'desc'};
   function onInput(e) {
     const id = e.target.id, val = e.target.value;
+    if (id === 'pwType') { st.type = val === 'sponsor' ? 'sponsor' : 'expense'; saveDraft(); preview(); return; }
+    if (SP_FIELDS[id]) {
+      st.sp[SP_FIELDS[id]] = val;
+      $('#pwSpWords').textContent = amountOf(st.sp.fees) ? words(amountOf(st.sp.fees)) : '';
+      saveDraft(); preview(); return;
+    }
     if (id === 'pwName') st.name = val;
     if (id === 'pwDate') st.date = val;
     if (id === 'pwAmount') st.amount = val;
@@ -215,6 +282,12 @@ window.PW = (() => {
     saveDraft(); preview();
   }
   const check = () => {
+    if (st.type === 'sponsor') {
+      const s = st.sp, miss = [!s.name.trim() && 'the sponsor name', !parse(s.start) && 'the start date', !parse(s.end) && 'the end date', !s.category.trim() && 'the category', !amountOf(s.fees) && 'the amount'].filter(Boolean);
+      if (miss.length) { A.toast('Add ' + miss.join(', ') + ' first.'); return false; }
+      if (s.end < s.start) { A.toast('The end date is before the start date.'); return false; }
+      return true;
+    }
     const miss = [!st.name.trim() && 'your name', !parse(st.date) && 'the date', !amountOf(st.amount) && 'the amount', !st.just.trim() && 'the justification'].filter(Boolean);
     if (miss.length) { A.toast('Add ' + miss.join(', ') + ' first.'); return false; }
     return true;
@@ -264,7 +337,7 @@ SUBJECT: <a subject line under 12 words>
   /* ---------- PDF ---------- */
   async function pdf() {
     if (!check()) return;
-    const btn = $('#pwPdf'); btn.disabled = true;
+    const sp = st.type === 'sponsor', btn = $(sp ? '#pwSpPdf' : '#pwPdf'); btn.disabled = true;
     const busy = document.createElement('div'); busy.className = 'rp-busy'; busy.textContent = 'Creating the PDF…'; document.body.appendChild(busy);
     const host = document.createElement('div');
     host.style.cssText = 'position:absolute;left:0;top:0;width:794px;z-index:-1;pointer-events:none';
@@ -272,19 +345,21 @@ SUBJECT: <a subject line under 12 words>
     try {
       await Promise.all([lib('jspdf'), lib('h2c')]);
       const v = values();
-      host.innerHTML = expensePage(v) + memoPage(v);
+      host.innerHTML = sp ? sponsorPage(st.sp) : expensePage(v) + memoPage(v);
       await Promise.all([...host.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
       try { await document.fonts?.ready; } catch {}
       const {jsPDF} = window.jspdf, doc = new jsPDF({unit: 'mm', format: 'a4', compress: true});
-      doc.setProperties({title: `TEDxGUC Expense Approval ${dateShort(v.date)}`, author: 'TEDxGUC', creator: 'TEDxGUC Cashbook'});
+      doc.setProperties({title: sp ? `TEDxGUC Sponsorship Agreement ${st.sp.name}` : `TEDxGUC Expense Approval ${dateShort(v.date)}`, author: 'TEDxGUC', creator: 'TEDxGUC Cashbook'});
       const pages = [...host.querySelectorAll('.pw-page')];
       for (let i = 0; i < pages.length; i++) {
         const canvas = await html2canvas(pages[i], {scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, scrollX: 0, scrollY: -window.scrollY, windowWidth: 1200});
         if (i) doc.addPage();
         doc.addImage(canvas.toDataURL('image/jpeg', .92), 'JPEG', 0, 0, 210, 297);
       }
-      const who = st.name.trim().split(/\s+/)[0].replace(/[^\w-]/g, '') || 'Request';
-      await A.offerFile(`TEDxGUC_Expense_Approval_${st.date}_${who}.pdf`, doc.output('blob'));
+      const safe = s => s.trim().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+      const file = sp ? `TEDxGUC_Sponsorship_Agreement_${safe(st.sp.name) || 'Sponsor'}_${st.sp.start}.pdf`
+        : `TEDxGUC_Expense_Approval_${st.date}_${safe(st.name.split(/\s+/)[0] || '') || 'Request'}.pdf`;
+      await A.offerFile(file, doc.output('blob'));
     } catch (e) { console.error(e); A.toast('Could not create the PDF: ' + (e?.message || 'unknown error')); }
     finally { host.remove(); busy.remove(); btn.disabled = false; }
   }
@@ -292,9 +367,33 @@ SUBJECT: <a subject line under 12 words>
   function render() {
     const sec = $('#tab-paperwork'); if (!sec) return;
     sec.innerHTML = `
-      <div class="panel-h" style="margin:0"><h2>Paperwork</h2><span class="lbl">Expense approval form + memo, ready to print and sign</span></div>
+      <div class="panel-h" style="margin:0"><h2>Paperwork</h2><span class="lbl">University forms, filled in and ready to print and sign</span></div>
       <div class="pw-grid">
+        <div class="pw-form">
         <div class="panel pw-form">
+          <div class="field"><label for="pwType">Choose your paper type</label>
+            <select class="inp" id="pwType"><option value="expense">Expense approval (form + memo)</option><option value="sponsor">Sponsor approval (sponsorship agreement)</option></select></div>
+        </div>
+        <div class="panel pw-form" id="pwSpForm" hidden>
+          <div class="panel-h" style="margin:0"><h2>Sponsor details</h2></div>
+          <div class="field"><label for="pwSpName">Sponsor name</label><input class="inp" id="pwSpName" list="sponsorList" placeholder="e.g. Pepsi"></div>
+          <div class="row2">
+            <div class="field"><label for="pwSpStart">Start date</label><input class="inp" id="pwSpStart" type="date"></div>
+            <div class="field"><label for="pwSpEnd">End date</label><input class="inp" id="pwSpEnd" type="date"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="pwSpCat">Category</label><input class="inp" id="pwSpCat" list="pwCats" placeholder="e.g. Food &amp; Beverages"><datalist id="pwCats"><option value="Food &amp; Beverages"><option value="Telecommunications"><option value="Banking &amp; Finance"><option value="Technology"><option value="Fashion &amp; Retail"><option value="Education"><option value="Media"><option value="Health &amp; Beauty"></datalist></div>
+            <div class="field"><label for="pwSpBooth">Booth type</label><select class="inp" id="pwSpBooth"><option value="guc">GUC booth (university)</option><option value="private">Private booth / truck</option></select></div>
+          </div>
+          <div class="field"><label for="pwSpFees">Agreed amount (EGP)</label><input class="inp num" id="pwSpFees" inputmode="decimal" placeholder="e.g. 50,000"><span class="pw-hint" id="pwSpWords"></span></div>
+          <div class="field"><label for="pwSpDesc">Sponsor description (optional)</label><input class="inp" id="pwSpDesc" placeholder="e.g. Soft drinks sponsor for the main event"></div>
+          <span class="pw-hint">The Needed Services boxes, Clinic Approval and signatures are left for the office to fill in.</span>
+          <div class="pw-acts" style="border-top:1px solid var(--rule);padding-top:14px">
+            <button class="btn red" id="pwSpPdf" type="button">Download PDF</button>
+            <button class="btn ghost" id="pwSpClear" type="button">Start a new agreement</button>
+          </div>
+        </div>
+        <div class="panel pw-form" id="pwExpForm">
           <div class="panel-h" style="margin:0"><h2>1 · Your request</h2></div>
           <div class="row2">
             <div class="field"><label for="pwName">Your name</label><input class="inp" id="pwName" list="pwPeople" placeholder="Requested by" autocomplete="name"><datalist id="pwPeople"></datalist></div>
@@ -316,11 +415,16 @@ SUBJECT: <a subject line under 12 words>
             <button class="btn ghost" id="pwClear" type="button">Start a new request</button>
           </div>
         </div>
-        <div class="pw-prev">
+        </div>
+        <div class="pw-prev" id="pwExpPrev">
           <div class="lbl" style="justify-self:start">Preview · page 1 of 2 · Expense Approval Request</div>
           <div class="pw-frame" id="pwPrevExp"></div>
           <div class="lbl" style="justify-self:start">Page 2 of 2 · Memo</div>
           <div class="pw-frame" id="pwPrevMemo"></div>
+        </div>
+        <div class="pw-prev" id="pwSpPrev" hidden>
+          <div class="lbl" style="justify-self:start">Preview · Sponsorship Agreement</div>
+          <div class="pw-frame" id="pwPrevSp"></div>
         </div>
       </div>`;
     $('#pwPeople').innerHTML = (A.S.settings?.members || []).map(m => `<option value="${esc(m)}">`).join('');
@@ -328,7 +432,8 @@ SUBJECT: <a subject line under 12 words>
     $('#pwClaude').onclick = writeWithClaude;
     $('#pwReset').onclick = () => { st.memoEdited = st.subjectEdited = false; st.memo = st.subject = ''; syncInputs(); saveDraft(); preview(); };
     $('#pwClear').onclick = () => { Object.assign(st, {name: st.name, date: ymd(new Date()), amount: '', just: '', subject: '', memo: '', memoEdited: false, subjectEdited: false}); syncInputs(); saveDraft(); preview(); };
-    $('#pwPdf').onclick = pdf;
+    $('#pwPdf').onclick = $('#pwSpPdf').onclick = pdf;
+    $('#pwSpClear').onclick = () => { st.sp = blankSp(); syncInputs(); saveDraft(); preview(); };
     syncInputs(); preview();
   }
 
