@@ -67,7 +67,7 @@ Each person then opens the site, enters their email and a password, and clicks *
 The key lives only on Supabase's server and never in the website code. Only signed-in team members can call the function.
 
 Good to know:
-- The free tier has a daily limit. If it's busy or used up, the app tries a lighter Gemini model; if that fails too, wait and try later.
+- The free tier has a daily limit. If it's busy or used up, the app tries a second Gemini model; if that fails too, wait and try later.
 - On the free tier Google may use what you send (the ledger summary, sponsor amounts) to improve its products. Turn on billing in AI Studio if that's a concern.
 - To use Claude instead (paid, not used for training): `supabase secrets unset GEMINI_API_KEY` and `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`.
 

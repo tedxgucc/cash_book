@@ -13,8 +13,9 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-// If the main model is busy or over its free limit, try the lighter one.
-const GEMINI_MODELS = [Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash", "gemini-3.5-flash-lite"];
+// Flash-Lite answers fastest (it thinks at the "minimal" level by default).
+// If it's busy or over its free limit, try the bigger Flash model.
+const GEMINI_MODELS = [Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash-lite", "gemini-3.8-flash"];
 
 async function askGemini(key: string, prompt: string): Promise<string> {
   let last = "Gemini API error";
