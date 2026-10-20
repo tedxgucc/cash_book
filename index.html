@@ -444,6 +444,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn sm" id="csvBtn">Export CSV</button>
         <button class="btn sm" id="xlsxBtn">Download as Excel</button>
+        <button class="btn sm" id="moveBtn" type="button" title="Move the entries shown below to another season">Move to season…</button>
         <button class="btn sm red" id="reportBtn2" type="button">Create report</button>
       </div>
     </div>
@@ -624,6 +625,14 @@ tfoot td{background:var(--stage-2);font-weight:700}
     <div style="display:flex;gap:8px"><button class="btn ghost" id="dCancel" type="button">Cancel</button><button class="btn red" id="dSave" type="button">Save</button></div>
   </div>
 </aside>
+
+<!-- move-to-season modal -->
+<div class="modal" id="moveModal" hidden role="dialog" aria-modal="true" aria-labelledby="mvTitle">
+  <h2 id="mvTitle">Move entries to another season</h2>
+  <div id="mvBody" class="muted" style="font-size:14px"></div>
+  <div class="field"><label for="mvSeason">Move to</label><select class="inp" id="mvSeason"></select></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" id="mvNo" type="button">Cancel</button><button class="btn red" id="mvYes" type="button">Move</button></div>
+</div>
 
 <!-- confirm modal -->
 <div class="scrim" id="mScrim" hidden></div>
@@ -1198,6 +1207,40 @@ async function saveDrawer() {
 }
 
 /* ---------- confirm + settings ---------- */
+/* ---------- move entries to another season ---------- */
+// Uses whatever the ledger shows right now: search a sponsor's name, then move all their entries.
+function openMove() {
+  if (!S.db || !S.canWrite) { toast('Sign in with edit access to move entries.'); return; }
+  const rows = filtered();
+  if (!rows.length) { toast('No entries are shown. Search or filter the ledger first.'); return; }
+  const seasons = [...new Set([curYear(), curYear() + 1, S.season - 1, S.season + 1, ...[...S.allEntries.values()].map(yearOf)])].filter(y => y && y !== S.season).sort((a, b) => b - a);
+  $('#mvSeason').innerHTML = seasons.map(y => `<option value="${y}">Season ${y}</option>`).join('');
+  $('#mvSeason').value = String(seasons.includes(S.season + 1) ? S.season + 1 : seasons[0]);
+  const total = rows.reduce((t, [, e]) => t + (+e.amount || 0), 0);
+  const names = rows.slice(0, 6).map(([, e]) => esc(e.desc || e.counterparty || 'entry')).join(', ') + (rows.length > 6 ? `, and ${rows.length - 6} more` : '');
+  $('#mvBody').innerHTML = `The <b>${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}</b> shown in the ledger (EGP ${fmt(total)}) will move out of season ${S.season}: ${names}. Search or filter first to move only some entries.`;
+  $('#mScrim').hidden = $('#moveModal').hidden = false;
+}
+async function moveSeason() {
+  const to = +$('#mvSeason').value, from = S.season, rows = filtered();
+  const ids = new Set(rows.map(([id]) => id));
+  rows.forEach(([, e]) => { if (e.transferId) S.entries.forEach((x, k) => { if (x.transferId === e.transferId) ids.add(k); }); }); // keep both sides of a transfer together
+  const before = [...ids].map(id => [id, S.entries.get(id)]).filter(([, e]) => e);
+  $('#mvYes').disabled = true;
+  try {
+    const now = new Date().toISOString();
+    for (const [id, e] of before) await S.db.collection('entries').doc(id).set({...e, year: to, updatedAt: now, updatedBy: S.meId || ''});
+    logPeopleKind('Season', `Moved ${before.length} entries from ${from} to ${to}`);
+    $('#mScrim').hidden = $('#moveModal').hidden = true;
+    toast(`Moved ${before.length} ${before.length === 1 ? 'entry' : 'entries'} to season ${to}`, async () => {
+      try { for (const [id, e] of before) await S.db.collection('entries').doc(id).set(e); toast('Moved back'); } catch (er) { writeErr(er); }
+    });
+  } catch (er) { writeErr(er); } finally { $('#mvYes').disabled = false; }
+}
+$('#moveBtn').onclick = openMove;
+$('#mvNo').onclick = () => $('#mScrim').hidden = $('#moveModal').hidden = true;
+$('#mvYes').onclick = moveSeason;
+
 function confirmBox(title, body, yes, onYes) {
   $('#mTitle').textContent = title; $('#mBody').textContent = body; $('#mYes').textContent = yes;
   $('#mScrim').hidden = $('#modal').hidden = false;
@@ -1497,7 +1540,7 @@ $('#missing').onchange = async e => {
 };
 document.addEventListener('keydown', e => {
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
-  if (e.key === 'Escape') { closeSheet(); if (!$('#drawer').hidden) closeDrawer(); $('#mScrim').hidden = $('#modal').hidden = $('#settings').hidden = $('#people').hidden = true; if (!$('#spModal').hidden) closeSponsor(); }
+  if (e.key === 'Escape') { closeSheet(); if (!$('#drawer').hidden) closeDrawer(); $('#mScrim').hidden = $('#modal').hidden = $('#settings').hidden = $('#people').hidden = $('#moveModal').hidden = true; if (!$('#spModal').hidden) closeSponsor(); }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openDrawer(); }
   if (e.key === '/') { e.preventDefault(); setTab('ledger'); $('#q').focus(); }
