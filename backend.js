@@ -19,12 +19,13 @@
   .gate-msg.err{color:var(--bad)}
   .gate-row{display:flex;gap:8px;flex-wrap:wrap}`;
   function gate(html) {
+    window.hideSplash?.();
     let g = document.getElementById('gate');
     if (!g) {
       const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
       g = document.createElement('div'); g.id = 'gate'; g.className = 'gate'; document.body.appendChild(g);
     }
-    const logo = document.querySelector('.brand img')?.src || '';
+    const logo = document.querySelector(document.documentElement.hasAttribute('data-light') ? '.brand img.lg-l' : '.brand img.lg-d')?.src || '';
     g.innerHTML = `<div class="gate-card" role="dialog" aria-labelledby="gateT"><img src="${logo}" alt="TEDxGUC"><h1 id="gateT">Cashbook</h1>${html}</div>`;
     return g;
   }

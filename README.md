@@ -8,6 +8,9 @@ The team's shared money tracker: cash and bank ledgers by season, curator custod
 ```
 index.html          the app
 backend.js          connects the app to Supabase
+charts.js           draws the graphs (app, Excel and PDF report)
+reports.js          graph panels, branded Excel export and the PDF report
+assets/             TEDxGUC and GUC logos used in the Excel file and PDF
 config.js           your Supabase URL + public key (step 3)
 supabase/schema.sql database tables, security rules, receipts bucket, report views
 supabase/functions/ask/index.ts   server function for "Ask Claude" (optional)
@@ -33,7 +36,7 @@ The anon key is designed to be public. The security rules in `schema.sql` are wh
 
 ## 4. Put it on GitHub Pages
 1. Create a new repository on GitHub (e.g. `tedxguc-cashbook`).
-2. **Add file → Upload files**: upload everything in this folder (`index.html`, `backend.js`, `config.js`, `README.md`, the `supabase` folder). **Not** `seed.sql`.
+2. **Add file → Upload files**: upload everything in this folder (`index.html`, `backend.js`, `charts.js`, `reports.js`, `config.js`, `README.md`, the `assets` and `supabase` folders). **Not** `seed.sql`.
 3. **Settings → Pages → Build and deployment:** Source = *Deploy from a branch*, Branch = `main`, folder `/ (root)` → Save.
 4. After a minute your site is live at `https://<your-username>.github.io/tedxguc-cashbook/`.
 5. Back in Supabase, **Authentication → URL Configuration**: set **Site URL** to that address.
