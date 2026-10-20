@@ -192,7 +192,7 @@ window.PW = (() => {
 .pw-rule{height:2px;background:#EB0028;margin:24px 0 26px}
 .pw-memo h1{margin:0;font-size:41px;line-height:1;font-weight:800;letter-spacing:.06em!important;color:#111}
 .pw-sub{color:#EB0028;font-weight:700;font-size:14px;letter-spacing:.12em!important;margin:6px 0 20px}
-.pw-meta{width:100%;border-collapse:collapse;font-size:16px}
+.pw-meta{width:100%;border-collapse:collapse;font-size:16px!important}
 .pw-meta th{width:140px;text-align:left;color:#EB0028;font-size:14px;letter-spacing:.2em!important;text-transform:uppercase;padding:9px 8px}
 .pw-meta td{padding:9px 0;color:#111}
 .pw-meta tr{border-bottom:1px solid #DDD}
@@ -211,7 +211,7 @@ window.PW = (() => {
 .pw-memo footer b{color:#EB0028}
 /* sponsorship agreement */
 .pw-spa{font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:700;padding:118px 0 0 77px}
-.pw-spa table{width:640px;border-collapse:collapse;table-layout:fixed;border:3px solid #000;border-left-width:5px}
+.pw-spa table{width:640px;font-size:12.5px;border-collapse:collapse;table-layout:fixed;border:3px solid #000;border-left-width:5px}
 .pw-spa td{border:1.5px solid #000;text-align:center;vertical-align:middle;padding:2px 4px;line-height:1.2;height:22px;overflow:hidden;word-wrap:break-word}
 .pw-spa td.pw-l{text-align:left;padding-left:8px}
 .pw-spa td.pw-np{padding:0}
