@@ -125,7 +125,8 @@ window.PW = (() => {
   const values = () => ({...st, subject: st.subject || defaultSubject(st), memo: st.memoEdited ? st.memo : templateMemo(st)});
 
   /* ---------- sponsorship agreement (one page) ---------- */
-  const BOX = on => `<img class="pw-cb" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" fill="#fff" stroke="#000" stroke-width="1.3"/>${on ? '<path d="M3.3 7.2l2.6 2.7 4.9-5.6" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>' : ''}</svg>`)}" alt="${on ? 'ticked' : 'not ticked'}">`;
+  // Plain CSS tick boxes: the PDF tool draws SVG images of them as solid black squares.
+  const BOX = on => `<span class="pw-cb">${on ? '<span class="pw-tick"></span>' : ''}</span>`;
   const BOOTH = {guc: 'GUC Booth', private: 'Private Booth/Truck'};
   function sponsorPage(sp) {
     const fees = amountOf(sp.fees), b = BOX(false);
@@ -218,7 +219,8 @@ window.PW = (() => {
 .pw-spa td.pw-sgn{border-color:#BBB #BBB #BBB #000}
 .pw-spa td.pw-top-al{vertical-align:top}
 .pw-spa-logo{width:108px;display:block;margin:0 auto}
-.pw-cb{width:13px;height:13px;display:block;margin:0 auto}
+.pw-cb{display:block;width:13px;height:13px;border:1.4px solid #000;background:#fff;margin:0 auto;position:relative}
+.pw-tick{position:absolute;left:3.5px;top:0;width:4.5px;height:8.5px;border:solid #000;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .pw-val{font-weight:400;font-size:13.5px}
 .pw-bt{display:grid;grid-template-rows:28px 24px}
 .pw-bt>div{display:grid;place-items:center}
