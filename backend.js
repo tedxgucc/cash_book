@@ -62,6 +62,15 @@
     g.querySelector('#gRe').onclick = () => location.reload();
     g.querySelector('#gOut').onclick = async () => { await sb.auth.signOut(); location.reload(); };
   }
+  // The team check itself failed (offline, project paused, database error), so don't claim "not on the list".
+  function showLookupError(email, err) {
+    const msg = String(err?.message || err?.code || 'unknown error').replace(/</g, '&lt;');
+    const g = gate(`<div style="font-size:15px">Couldn't check whether <b>${email.replace(/</g, '&lt;')}</b> is on the team list.</div>
+      <div class="muted" style="font-size:14px">The database didn't answer properly: <code>${msg}</code>. Check your connection, and check the Supabase project isn't paused.</div>
+      <div class="gate-row"><button class="btn red" id="gRe" type="button">Try again</button><button class="btn ghost" id="gOut" type="button">Use another account</button></div>`);
+    g.querySelector('#gRe').onclick = () => location.reload();
+    g.querySelector('#gOut').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  }
   function showSetup() {
     gate(`<div style="font-size:15px">This copy isn't connected to a database yet.</div>
       <div class="muted" style="font-size:14px">Open <b>config.js</b> and paste your Supabase Project URL and anon key. The README walks through it.</div>`);
@@ -74,7 +83,8 @@
     session = data.session;
     if (!session) { showLogin(); return false; }
     const email = (session.user.email || '').toLowerCase();
-    const { data: row } = await sb.from('team_members').select('email,name,role,is_admin').eq('email', email).maybeSingle();
+    const { data: row, error: rowErr } = await sb.from('team_members').select('email,name,role,is_admin').eq('email', email).maybeSingle();
+    if (rowErr) { showLookupError(email, rowErr); return false; }
     if (!row) { showDenied(email); return false; }
     member = row;
     // sign-out button in the header
