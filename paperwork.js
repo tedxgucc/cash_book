@@ -296,11 +296,11 @@ window.PW = (() => {
     return true;
   };
 
-  /* ---------- Claude writes the memo ---------- */
+  /* ---------- AI writes the memo ---------- */
   let ctl = null;
   async function writeWithClaude() {
     if (!check()) return;
-    if (!A.S.sample) { A.toast('Ask Claude is not available. The standard memo text is used instead.'); return; }
+    if (!A.S.sample) { A.toast('Ask AI is not available. The standard memo text is used instead.'); return; }
     const amt = amountOf(st.amount), btn = $('#pwClaude');
     const prompt = `Write the body of a short, formal memo from the TEDxGUC team (a student-run TEDx event at the German University in Cairo) to the university's Student Activity Office, asking them to approve an expense.
 
@@ -332,8 +332,8 @@ SUBJECT: <a subject line under 8 words>
       if (text) { st.memo = text; st.memoEdited = true; }
       syncInputs(); saveDraft(); preview(); A.toast('Memo written. Read it over and edit anything you like.');
     } catch (e) {
-      if (e?.name !== 'AbortError' && e?.code !== 'aborted') A.toast(e?.text || 'Claude could not write the memo. The standard text is still there.');
-    } finally { btn.disabled = false; btn.textContent = 'Write the memo with Claude'; }
+      if (e?.name !== 'AbortError' && e?.code !== 'aborted') A.toast(e?.text || 'The AI could not write the memo. The standard text is still there.');
+    } finally { btn.disabled = false; btn.textContent = 'Write the memo with AI'; }
   }
 
   /* ---------- PDF ---------- */
@@ -410,7 +410,7 @@ SUBJECT: <a subject line under 8 words>
             <span class="pw-hint">"Dear Student Activity Office" and "Kind regards, TEDxGUC Team" are added for you. Leave an empty line between paragraphs.</span>
             <span class="pw-hint" id="pwFit" hidden style="color:var(--bad)">The memo is too long for one page. Shorten it a little.</span></div>
           <div class="pw-acts">
-            <button class="btn" id="pwClaude" type="button">Write the memo with Claude</button>
+            <button class="btn" id="pwClaude" type="button">Write the memo with AI</button>
             <button class="btn ghost" id="pwReset" type="button">Use standard text</button>
           </div>
           <div class="pw-acts" style="border-top:1px solid var(--rule);padding-top:14px">

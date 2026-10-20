@@ -1,6 +1,6 @@
 # TEDxGUC Cashbook
 
-The team's shared money tracker: cash and bank ledgers by season, curator custody, 14% VAT on bank deposits, sponsors and yearly income, phase budgets, fatora tracking, receipts, activity log, Excel export and an "Ask Claude" assistant.
+The team's shared money tracker: cash and bank ledgers by season, curator custody, 14% VAT on bank deposits, sponsors and yearly income, phase budgets, fatora tracking, receipts, activity log, Excel export and an "Ask AI" assistant.
 
 - **Website:** plain HTML/JS, hosted free on GitHub Pages
 - **Backend:** Supabase (Postgres database, logins, private receipt storage, live updates)
@@ -14,7 +14,7 @@ paperwork.js        Paperwork tab: fills the expense approval form + memo as one
 assets/             TEDxGUC and GUC logos used in the Excel file and PDF
 config.js           your Supabase URL + public key (step 3)
 supabase/schema.sql database tables, security rules, receipts bucket, report views
-supabase/functions/ask/index.ts   server function for "Ask Claude" (optional)
+supabase/functions/ask/index.ts   server function for "Ask AI" (optional, uses free Gemini)
 ```
 
 `seed.sql` (your existing data) is delivered **separately** on purpose. It contains sponsor and bank figures. **Never commit it to GitHub.**
@@ -54,16 +54,22 @@ Each person then opens the site, enters their email and a password, and clicks *
 
 `is_admin` people can add/remove others in `team_members`. Everyone on the list can add and edit entries.
 
-## 6. "Ask Claude" (optional, paid per use)
-1. Get an API key at **console.anthropic.com** (add a small credit balance).
+## 6. "Ask AI" (optional, free)
+"Ask AI" and the memo writer in Paperwork use **Google Gemini's free tier**.
+1. Go to **aistudio.google.com** → sign in with a Google account → **Get API key** → **Create API key**. No card needed.
 2. Install the Supabase CLI, then from this folder:
    ```bash
    supabase login
    supabase link --project-ref YOUR-PROJECT-ID
    supabase functions deploy ask
-   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+   supabase secrets set GEMINI_API_KEY=your-key-here
    ```
 The key lives only on Supabase's server and never in the website code. Only signed-in team members can call the function.
+
+Good to know:
+- The free tier has a daily limit. If it's busy or used up, the app tries a lighter Gemini model; if that fails too, wait and try later.
+- On the free tier Google may use what you send (the ledger summary, sponsor amounts) to improve its products. Turn on billing in AI Studio if that's a concern.
+- To use Claude instead (paid, not used for training): `supabase secrets unset GEMINI_API_KEY` and `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`.
 
 ## Reports
 Two read-only views are created for you. Try them in the SQL Editor:

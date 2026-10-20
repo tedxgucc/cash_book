@@ -375,7 +375,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
       <button role="tab" data-tab="fatora">Fatora<span class="badge" id="fatoraBadge" hidden></span></button>
       <button role="tab" data-tab="paperwork">Paperwork</button>
       <button role="tab" data-tab="activity">Activity</button>
-      <button role="tab" data-tab="ask">Ask Claude</button>
+      <button role="tab" data-tab="ask">Ask AI</button>
     </nav>
   </div>
 </header>
@@ -546,7 +546,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
   <!-- ASK -->
   <section class="tab" id="tab-ask" hidden>
     <div class="panel ask-box">
-      <div class="panel-h" style="margin:0"><h2>Ask Claude about the money</h2><span class="lbl">Reads the live ledger</span></div>
+      <div class="panel-h" style="margin:0"><h2>Ask AI about the money</h2><span class="lbl">Reads the live ledger</span></div>
       <div class="chips" id="askChips">
         <button class="chip">How much cash is in the curator's box, and who needs reimbursing?</button>
         <button class="chip">Compare this year's sponsorship income with past years.</button>
@@ -578,7 +578,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
   <button type="button" class="si" data-tab="fatora">Fatora <span class="nb" id="moreFatora" hidden></span></button>
   <button type="button" class="si" data-tab="paperwork">Paperwork</button>
   <button type="button" class="si" data-tab="activity">Activity</button>
-  <button type="button" class="si" data-tab="ask">Ask Claude</button>
+  <button type="button" class="si" data-tab="ask">Ask AI</button>
   <button type="button" class="si" data-act="report">Create report (PDF)</button>
   <button type="button" class="si" data-act="theme" id="sheetTheme">Light mode</button>
   <button type="button" class="si" data-act="settings">Settings</button>
@@ -682,10 +682,10 @@ tfoot td{background:var(--stage-2);font-weight:700}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
-<script src="backend.js?v=3"></script>
+<script src="backend.js?v=4"></script>
 <script src="charts.js?v=2"></script>
 <script src="reports.js?v=3"></script>
-<script src="paperwork.js?v=7"></script>
+<script src="paperwork.js?v=8"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 <script>
 (() => {
@@ -1306,7 +1306,7 @@ $('#xlsxBtn').onclick = () => window.CB ? window.CB.excel() : toast('The Excel t
 let askCtl = null;
 async function ask(q) {
   if (!q.trim()) return;
-  if (!S.sample) { $('#askOut').textContent = 'Ask Claude is not available right now.'; return; }
+  if (!S.sample) { $('#askOut').textContent = 'Ask AI is not available right now.'; return; }
   const c = calc();
   const data = {
     season: S.season, currency: 'EGP', taxRateOnBankDeposits: S.settings.taxRate + '%',
@@ -1321,7 +1321,7 @@ async function ask(q) {
   askCtl?.abort(); askCtl = new AbortController();
   $('#askOut').textContent = 'Thinking…'; $('#askBtn').disabled = true; $('#askStop').hidden = false;
   try { const r = await S.sample(prompt, {onText: ({text}) => $('#askOut').textContent = text, signal: askCtl.signal, modelTier: 'default'}); $('#askOut').textContent = r.text; }
-  catch (e) { if (e?.name === 'AbortError' || e?.code === 'aborted') return; $('#askOut').textContent = e?.code === 'not_granted' ? 'Ask Claude is not allowed for this account.' : e?.code === 'rate_limited' ? 'Too many questions right now. Wait a minute and ask again.' : (e?.text || 'Something went wrong. Try again.'); }
+  catch (e) { if (e?.name === 'AbortError' || e?.code === 'aborted') return; $('#askOut').textContent = e?.code === 'not_granted' ? 'Ask AI is not allowed for this account.' : e?.code === 'rate_limited' ? 'Too many questions right now. Wait a minute and ask again.' : (e?.text || 'Something went wrong. Try again.'); }
   finally { $('#askBtn').disabled = false; $('#askStop').hidden = true; }
 }
 $('#askBtn').onclick = () => ask($('#askQ').value);

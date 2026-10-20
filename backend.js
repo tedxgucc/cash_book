@@ -222,14 +222,14 @@
     },
   };
 
-  /* ---------------- Ask Claude (Edge Function) ---------------- */
+  /* ---------------- Ask AI (Edge Function) ---------------- */
   async function sample(input, opts = {}) {
     const prompt = typeof input === 'string' ? input : input.map(m => m.content).join('\n\n');
     const { data, error } = await sb.functions.invoke('ask', { body: { prompt } });
     if (error) {
       let msg = error.message;
       try { msg = (await error.context?.json())?.error || msg; } catch {}
-      throw { code: 'unavailable', message: msg, text: /not found|Failed to send/i.test(msg) ? 'Ask Claude is not set up yet. Deploy the "ask" function (see README).' : 'Ask Claude could not answer: ' + msg };
+      throw { code: 'unavailable', message: msg, text: /not found|Failed to send/i.test(msg) ? 'Ask AI is not set up yet. Deploy the "ask" function (see README).' : 'Ask AI could not answer: ' + msg };
     }
     opts.onText?.({ text: data.text, delta: data.text });
     return { text: data.text, truncated: false };
