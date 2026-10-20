@@ -373,6 +373,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
       <button role="tab" data-tab="phases">Phases &amp; budget</button>
       <button role="tab" data-tab="sponsors">Sponsors &amp; income</button>
       <button role="tab" data-tab="fatora">Fatora<span class="badge" id="fatoraBadge" hidden></span></button>
+      <button role="tab" data-tab="paperwork">Paperwork</button>
       <button role="tab" data-tab="activity">Activity</button>
       <button role="tab" data-tab="ask">Ask Claude</button>
     </nav>
@@ -531,6 +532,9 @@ tfoot td{background:var(--stage-2);font-weight:700}
     </div>
   </section>
 
+  <!-- PAPERWORK (filled in by paperwork.js) -->
+  <section class="tab" id="tab-paperwork" hidden></section>
+
   <!-- ACTIVITY -->
   <section class="tab" id="tab-activity" hidden>
     <div class="panel">
@@ -572,6 +576,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
   <button type="button" class="si" data-tab="sponsors">Sponsors &amp; income</button>
   <button type="button" class="si" data-tab="phases">Phases &amp; budget</button>
   <button type="button" class="si" data-tab="fatora">Fatora <span class="nb" id="moreFatora" hidden></span></button>
+  <button type="button" class="si" data-tab="paperwork">Paperwork</button>
   <button type="button" class="si" data-tab="activity">Activity</button>
   <button type="button" class="si" data-tab="ask">Ask Claude</button>
   <button type="button" class="si" data-act="report">Create report (PDF)</button>
@@ -680,6 +685,7 @@ tfoot td{background:var(--stage-2);font-weight:700}
 <script src="backend.js"></script>
 <script src="charts.js"></script>
 <script src="reports.js"></script>
+<script src="paperwork.js"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 <script>
 (() => {
@@ -1065,11 +1071,12 @@ function setTab(t) {
   if (!document.getElementById('tab-' + t)) t = 'overview';
   S.tab = t;
   $$('#tabs button, #bottomNav [data-tab], #moreSheet [data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
-  $('#moreBtn')?.setAttribute('aria-selected', ['sponsors', 'phases', 'fatora', 'activity', 'ask'].includes(t));
+  $('#moreBtn')?.setAttribute('aria-selected', ['sponsors', 'phases', 'fatora', 'paperwork', 'activity', 'ask'].includes(t));
   closeSheet(); window.scrollTo?.(0, 0);
   $$('section.tab').forEach(s => s.hidden = s.id !== 'tab-' + t);
   window.CB?.refresh();
   if (t === 'activity') renderActivity();
+  if (t === 'paperwork') window.PW?.shown();
   try { history.replaceState(null, '', '#' + t); } catch {}
   try { localStorage.setItem('tedx-tab', t); } catch {}
 }
@@ -1588,6 +1595,7 @@ function hideSplash() {
 window.hideSplash = hideSplash;
 setTimeout(hideSplash, 5000);
 window.CB?.init({S, calc, KIND, yearOf, catOf, vatOf, sponsorOf, offerFile, toast});
+window.PW?.init({S, toast, offerFile});
 boot();
 })();
 </script>

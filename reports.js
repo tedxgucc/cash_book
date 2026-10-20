@@ -779,5 +779,5 @@ window.CB = (() => {
     let t = 0, lastW = window.innerWidth;
     window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (lastC && window.innerWidth !== lastW) { lastW = window.innerWidth; graphs(lastC); } }, 200); });
   }
-  return {init, graphs, refresh: () => lastC && graphs(lastC), excel: y => excel(y).catch(err), openReport: t => openReport(t)};
+  return {init, lib, graphs, refresh: () => lastC && graphs(lastC), excel: y => excel(y).catch(err), openReport: t => openReport(t)};
 })();
